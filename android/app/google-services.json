@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "9209034397",
+    "project_id": "yesbilliard",
+    "storage_bucket": "yesbilliard.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:9209034397:android:34e17650feb1f013050674",
+        "android_client_info": {
+          "package_name": "com.codingaja.yesbilliard"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX1ZbDJih52Lhphz9hiGglj9T58N5-vy0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

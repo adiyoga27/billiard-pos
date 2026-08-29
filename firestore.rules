@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      // Admin pertama mendaftar sendiri (role admin), atau admin membuat akun kasir baru
+      allow create: if signedIn()
+        && (request.auth.uid == uid && request.resource.data.role == 'admin'
+            || isAdmin());
+      // Admin bebas mengubah apa pun; user biasa hanya boleh mengupdate
+      // fcm_token miliknya sendiri (untuk notifikasi).
+      allow update: if signedIn()
+        && (request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['fcm_token'])
+            || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /tables/{tableId} {
+      allow read: if signedIn();
+      allow create: if isAdmin();
+      // update status meja (mulai/selesai sesi) boleh dilakukan kasir
+      allow update: if signedIn();
+      allow delete: if isAdmin();
+    }
+
+    match /table_sessions/{sessionId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+
+    match /packages/{packageId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn();
+      allow delete: if isAdmin();
+    }
+
+    // Nomor invoice berurutan (counter increment dibungkus runTransaction,
+    // jadi butuh read + write untuk kasir yang bertransaksi).
+    match /counters/{counterId} {
+      allow read, write: if signedIn();
+    }
+  }
+}

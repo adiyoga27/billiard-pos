@@ -1,0 +1,436 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/domain/billing_calculator.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/formatters.dart';
+import '../../auth/providers/auth_providers.dart';
+import '../../settings/domain/settings_models.dart';
+import '../../tables/domain/table_models.dart';
+import '../../tables/providers/tables_providers.dart';
+import '../domain/product_models.dart';
+import '../providers/pos_providers.dart';
+import 'receipt_dialog.dart';
+
+/// Halaman checkout: diskon, metode bayar, uang diterima, konfirmasi transaksi.
+/// [items] = item yang dibayar (dari cart walk-in ATAU pesanan meja).
+/// [sessionToFinalize] = sesi meja yang ikut difinalisasi & digabung ke struk.
+class CheckoutScreen extends ConsumerStatefulWidget {
+  final List<CartItem> items;
+  final TableSession? sessionToFinalize;
+  final String? title;
+  final VoidCallback? onSuccess;
+
+  const CheckoutScreen({
+    super.key,
+    required this.items,
+    this.sessionToFinalize,
+    this.title,
+    this.onSuccess,
+  });
+
+  @override
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  PaymentMethod _method = PaymentMethod.tunai;
+  bool _useDiscount = false;
+  bool _discountIsPercent = true;
+  final _discountCtrl = TextEditingController();
+  final _discountReasonCtrl = TextEditingController();
+  final _cashCtrl = TextEditingController();
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _discountCtrl.dispose();
+    _discountReasonCtrl.dispose();
+    _cashCtrl.dispose();
+    super.dispose();
+  }
+
+  Discount? get _discount {
+    if (!_useDiscount) return null;
+    final value = int.tryParse(_discountCtrl.text) ?? 0;
+    if (value <= 0) return null;
+    return Discount(
+      type: _discountIsPercent ? DiscountType.percent : DiscountType.nominal,
+      value: value,
+      reason: _discountReasonCtrl.text.trim().isEmpty ? null : _discountReasonCtrl.text.trim(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final attached = widget.sessionToFinalize;
+    final sessionFee = attached != null ? _sessionFee(attached, settings) : 0;
+    final discount = _discount;
+    final subtotal = widget.items.fold<int>(0, (acc, i) => acc + i.subtotal);
+    final totals = calculateTransactionTotals(
+      subtotal: subtotal,
+      discount: discount,
+      taxPercent: settings.pajakPersen,
+      serviceChargePercent: settings.serviceChargePersen,
+    );
+    final grandTotal = totals.total + sessionFee;
+    final cashEntered = int.tryParse(_cashCtrl.text) ?? 0;
+    final change = _method == PaymentMethod.tunai && cashEntered > 0 ? cashEntered - grandTotal : null;
+
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.title ?? 'Checkout')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 110),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (attached != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.billiardGreen.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.billiardGreen.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(AppTheme.billiardIcon, color: AppTheme.billiardGreenDark),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Sesi Meja ${attached.tableName ?? ''} akan difinalisasi & digabung ke struk ini.',
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (widget.items.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    for (final item in widget.items)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 3),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${item.product.nama} × ${item.qty}',
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              formatRupiah(item.subtotal),
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Text('Metode Pembayaran', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (final m in PaymentMethod.values) ...[
+                  Expanded(
+                    child: _MethodCard(
+                      method: m,
+                      selected: _method == m,
+                      onTap: () => setState(() => _method = m),
+                    ),
+                  ),
+                  if (m != PaymentMethod.values.last) const SizedBox(width: 8),
+                ],
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text('Diskon', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Pakai diskon', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+              value: _useDiscount,
+              onChanged: (v) => setState(() => _useDiscount = v),
+            ),
+            if (_useDiscount) ...[
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: true, label: Text('Persen')),
+                  ButtonSegment(value: false, label: Text('Nominal')),
+                ],
+                selected: {_discountIsPercent},
+                onSelectionChanged: (s) => setState(() => _discountIsPercent = s.first),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _discountCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: _discountIsPercent ? 'Diskon (%)' : 'Diskon (Rp)',
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _discountReasonCtrl,
+                      decoration: const InputDecoration(labelText: 'Alasan (opsional)', isDense: true),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 14),
+            if (_method == PaymentMethod.tunai) ...[
+              Text('Uang Diterima', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _cashCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Uang tunai (Rp)',
+                  prefixIcon: Icon(Icons.payments_outlined),
+                ),
+              ),
+              if (change != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    change >= 0
+                        ? 'Kembalian: ${formatRupiah(change)}'
+                        : 'Uang kurang: ${formatRupiah(-change)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: change >= 0 ? AppTheme.tableFree : AppTheme.tableUsed,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 10),
+            ],
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  _Row('Subtotal produk', totals.subtotal),
+                  if (totals.discountAmount > 0) _Row('Diskon', -totals.discountAmount, color: AppTheme.tableFree),
+                  if (attached != null) _Row('Sesi meja (final)', sessionFee),
+                  if (totals.serviceChargeAmount > 0)
+                    _Row('Service charge ${settings.serviceChargePersen.toStringAsFixed(0)}%', totals.serviceChargeAmount),
+                  if (totals.taxAmount > 0)
+                    _Row('Pajak ${settings.pajakPersen.toStringAsFixed(0)}%', totals.taxAmount),
+                  const Divider(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('TOTAL', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+                      Text(
+                        formatRupiah(grandTotal),
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(_error!, style: const TextStyle(color: AppTheme.tableUsed, fontWeight: FontWeight.w700)),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+          ),
+          child: FilledButton.icon(
+            onPressed: _saving ? null : () => _submit(settings, grandTotal),
+            icon: _saving
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                  )
+                : const Icon(Icons.check_circle_outline_rounded),
+            label: const Text('Bayar & Cetak Struk'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _sessionFee(TableSession session, AppSettings settings) {
+    final now = ref.watch(nowTickProvider).valueOrNull ?? DateTime.now();
+    final tables = ref.watch(tablesStreamProvider).valueOrNull ?? const <BillTable>[];
+    final table = tables.where((t) => t.id == session.tableId).firstOrNull;
+    if (table == null) return 0;
+    final bill = calculateSessionBill(
+      elapsed: session.elapsedAt(now),
+      ratePerHour: table.tarifPerJam,
+      mode: table.metodePembulatan,
+      extraCharges: session.biayaTambahan,
+      addedPackagesTotal: session.paketTambahanTotal,
+      discount: session.diskon,
+      flatPackagePrice: null,
+    );
+    return bill.subtotal;
+  }
+
+  Future<void> _submit(AppSettings settings, int grandTotal) async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) return;
+
+    final cashEntered = int.tryParse(_cashCtrl.text) ?? 0;
+    if (_method == PaymentMethod.tunai && cashEntered > 0 && cashEntered < grandTotal) {
+      setState(() => _error = 'Uang tunai kurang dari total.');
+      return;
+    }
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final items = [
+        for (final item in widget.items)
+          TransactionItem(
+            productId: item.product.id,
+            nama: item.product.nama,
+            qty: item.qty,
+            hargaSatuan: item.product.harga,
+          ),
+      ];
+      final repo = ref.read(posRepositoryProvider);
+      final tx = await repo.createTransaction(
+        kasir: user,
+        items: items,
+        discount: _discount,
+        settings: settings,
+        metodeBayar: _method,
+        uangDiterima: _method == PaymentMethod.tunai && cashEntered > 0 ? cashEntered : null,
+        sessionToFinalize: widget.sessionToFinalize,
+      );
+
+      // Bersihkan keranjang (walk-in) yang sudah dipakai — cart meja
+      // dibersihkan oleh pemanggil (halaman meja) via onSuccess.
+      if (widget.sessionToFinalize == null) {
+        ref.read(cartControllerProvider.notifier).clear();
+      }
+      widget.onSuccess?.call();
+
+      if (!mounted) return;
+      // Tampilkan struk dulu (dialog hasil, bukan form), lalu tutup halaman.
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ReceiptDialog(transaction: tx, settings: settings),
+      );
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        _saving = false;
+        _error = 'Gagal menyimpan transaksi: $e';
+      });
+    }
+  }
+}
+
+class _MethodCard extends StatelessWidget {
+  final PaymentMethod method;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MethodCard({required this.method, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppTheme.billiardGreen.withValues(alpha: 0.08) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppTheme.billiardGreen : Colors.grey.shade300,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(method.icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(height: 6),
+            Text(
+              method.label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: selected ? AppTheme.billiardGreenDark : AppTheme.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color? color;
+
+  const _Row(this.label, this.value, {this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13.5, color: color ?? Colors.grey.shade700)),
+          Text(
+            '${value < 0 ? '-' : ''}${formatRupiah(value.abs())}',
+            style: TextStyle(fontWeight: FontWeight.w700, color: color ?? AppTheme.ink),
+          ),
+        ],
+      ),
+    );
+  }
+}
