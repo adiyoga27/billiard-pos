@@ -44,37 +44,38 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyARQoH6f5H-kLaz239_s0BJThcThzalVF4',
-    appId: '1:9209034397:web:729afde490e9cad2050674',
-    messagingSenderId: '9209034397',
-    projectId: 'yesbilliard',
-    authDomain: 'yesbilliard.firebaseapp.com',
-    storageBucket: 'yesbilliard.firebasestorage.app',
+    apiKey: 'AIzaSyBLMcYtTaZz5STqFcX7xvrpQRLi0TN2d84',
+    appId: '1:505391705786:web:dcf350a39fa207d4ed5c83',
+    messagingSenderId: '505391705786',
+    projectId: 'billiard-pos-80296',
+    authDomain: 'billiard-pos-80296.firebaseapp.com',
+    storageBucket: 'billiard-pos-80296.firebasestorage.app',
+    measurementId: 'G-FEGV0F2KRL',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAX1ZbDJih52Lhphz9hiGglj9T58N5-vy0',
-    appId: '1:9209034397:android:34e17650feb1f013050674',
-    messagingSenderId: '9209034397',
-    projectId: 'yesbilliard',
-    storageBucket: 'yesbilliard.firebasestorage.app',
+    apiKey: 'AIzaSyCHylmpeIFmeYGZkmccqFqH2uPvVuzJhuU',
+    appId: '1:505391705786:android:5f617e97db7d4aa9ed5c83',
+    messagingSenderId: '505391705786',
+    projectId: 'billiard-pos-80296',
+    storageBucket: 'billiard-pos-80296.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAao8nrBi-fWnPY5Op_VdstBqcrUVK9Yhs',
-    appId: '1:9209034397:ios:34bc5ad907497253050674',
-    messagingSenderId: '9209034397',
-    projectId: 'yesbilliard',
-    storageBucket: 'yesbilliard.firebasestorage.app',
+    apiKey: 'AIzaSyC3d7r3A_d8Ef73GlYi8E16rVt13LjIVkY',
+    appId: '1:505391705786:ios:b7632beccd00497bed5c83',
+    messagingSenderId: '505391705786',
+    projectId: 'billiard-pos-80296',
+    storageBucket: 'billiard-pos-80296.firebasestorage.app',
     iosBundleId: 'com.codingaja.yesbilliard',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyARQoH6f5H-kLaz239_s0BJThcThzalVF4',
-    appId: '1:9209034397:web:8474608074090eee050674',
-    messagingSenderId: '9209034397',
-    projectId: 'yesbilliard',
-    authDomain: 'yesbilliard.firebaseapp.com',
-    storageBucket: 'yesbilliard.firebasestorage.app',
+    apiKey: 'AIzaSyBLMcYtTaZz5STqFcX7xvrpQRLi0TN2d84',
+    appId: '1:505391705786:web:a4ff9973cc3d3226ed5c83',
+    messagingSenderId: '505391705786',
+    projectId: 'billiard-pos-80296',
+    authDomain: 'billiard-pos-80296.firebaseapp.com',
+    storageBucket: 'billiard-pos-80296.firebasestorage.app',
+    measurementId: 'G-0EPV5NH10W',
   );
 }

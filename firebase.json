@@ -1,12 +1,1 @@
-{
-  "auth": {
-    "providers": {
-      "anonymous": false,
-      "emailPassword": true
-    }
-  },
-  "firestore": {
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexes.json"
-  }
-}
+{"auth":{"providers":{"anonymous":false,"emailPassword":true}},"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"billiard-pos-80296","appId":"1:505391705786:android:5f617e97db7d4aa9ed5c83","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"billiard-pos-80296","configurations":{"android":"1:505391705786:android:5f617e97db7d4aa9ed5c83","ios":"1:505391705786:ios:b7632beccd00497bed5c83","web":"1:505391705786:web:dcf350a39fa207d4ed5c83","windows":"1:505391705786:web:a4ff9973cc3d3226ed5c83"}}}}}}
