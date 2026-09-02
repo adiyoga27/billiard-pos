@@ -7,7 +7,9 @@ import '../../tables/domain/table_models.dart';
 import '../domain/product_models.dart';
 
 class PosRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  PosRepository({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   Stream<List<Category>> categoriesStream() {
     return _db

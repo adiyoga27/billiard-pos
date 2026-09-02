@@ -92,12 +92,20 @@ extension SessionModeX on SessionMode {
   static SessionMode fromStorage(String? v) => v == 'durasi_tetap' ? SessionMode.durasiTetap : SessionMode.bebas;
 }
 
-enum SessionStatus { berjalan, selesai }
+enum SessionStatus { berjalan, selesai, batal }
 
 extension SessionStatusX on SessionStatus {
-  String get storageValue => this == SessionStatus.berjalan ? 'berjalan' : 'selesai';
+  String get storageValue => switch (this) {
+        SessionStatus.berjalan => 'berjalan',
+        SessionStatus.selesai => 'selesai',
+        SessionStatus.batal => 'batal',
+      };
 
-  static SessionStatus fromStorage(String? v) => v == 'selesai' ? SessionStatus.selesai : SessionStatus.berjalan;
+  static SessionStatus fromStorage(String? v) => switch (v) {
+        'selesai' => SessionStatus.selesai,
+        'batal' => SessionStatus.batal,
+        _ => SessionStatus.berjalan,
+      };
 }
 
 /// Paket yang ditambahkan KETIKA sesi sedang berjalan (menambah durasi &
@@ -143,6 +151,49 @@ class AddedPackage {
         if (durasiMenit != null) 'durasi_menit': durasiMenit,
         'waktu_ditambahkan': Timestamp.fromDate(waktuDitambahkan),
       };
+}
+
+/// Grup tampilan paket tambahan: paket yang sama dibeli berulang digabung
+/// jadi satu baris "Paket X × 2". Data asli tetap per entri (entry) supaya
+/// tiap pembelian masih bisa dibatalkan satu per satu.
+class AddedPackageGroup {
+  final String packageId;
+  final String namaPaket;
+  final int hargaSatuan;
+  final int? durasiMenit;
+  final int qty;
+  final List<AddedPackage> entries;
+
+  const AddedPackageGroup({
+    required this.packageId,
+    required this.namaPaket,
+    required this.hargaSatuan,
+    this.durasiMenit,
+    required this.qty,
+    required this.entries,
+  });
+
+  int get subtotal => hargaSatuan * qty;
+}
+
+/// Kelompokkan paket tambahan yang sama (dibeli lebih dari sekali) menjadi
+/// satu baris dengan jumlah (qty).
+List<AddedPackageGroup> groupAddedPackages(List<AddedPackage> packages) {
+  final map = <String, List<AddedPackage>>{};
+  for (final p in packages) {
+    map.putIfAbsent(p.packageId, () => <AddedPackage>[]).add(p);
+  }
+  return [
+    for (final entries in map.values)
+      AddedPackageGroup(
+        packageId: entries.first.packageId,
+        namaPaket: entries.first.namaPaket,
+        hargaSatuan: entries.first.harga,
+        durasiMenit: entries.first.durasiMenit,
+        qty: entries.length,
+        entries: entries,
+      ),
+  ];
 }
 
 class TableSession {
@@ -301,7 +352,7 @@ class TableSession {
 
   /// Durasi berjalan (untuk sesi aktif) atau durasi final.
   Duration elapsedAt(DateTime now) =>
-      (status == SessionStatus.selesai ? (waktuSelesai ?? now) : now).difference(waktuMulai);
+      (status == SessionStatus.berjalan ? now : (waktuSelesai ?? now)).difference(waktuMulai);
 }
 
 /// Ringkasan sesi yang sedang berjalan — dipakai di kartu dashboard.

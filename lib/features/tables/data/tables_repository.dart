@@ -7,7 +7,9 @@ import '../domain/package_models.dart';
 import '../domain/table_models.dart';
 
 class TablesRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  TablesRepository({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   Stream<List<BillTable>> tablesStream() {
     return _db
@@ -119,13 +121,15 @@ class TablesRepository {
 
     await _db.runTransaction((tx) async {
       final tableRef = _db.collection('tables').doc(session.tableId);
+      // ===== FASE READ: semua read wajib SEBELUM write dalam transaksi =====
+      final snap = await tx.get(tableRef);
+
       tx.update(_db.collection('table_sessions').doc(session.id), {
         'status': SessionStatus.selesai.storageValue,
         'waktu_selesai': Timestamp.fromDate(now),
         'durasi_menit': elapsed.inMinutes,
         'biaya': bill.subtotal,
       });
-      final snap = await tx.get(tableRef);
       if (snap.exists) {
         final t = BillTable.fromFirestore(tableRef.id, snap.data()!);
         // Hanya kosongkan bila meja masih menunjuk sesi ini (ada kemungkinan
@@ -195,7 +199,10 @@ class TablesRepository {
       );
 
       final updates = <String, dynamic>{
-        'paket_tambahan': [...s.paketTambahan, added.toMap()],
+        'paket_tambahan': [
+          ...s.paketTambahan.map((p) => p.toMap()),
+          added.toMap(),
+        ],
         'is_alert_triggered': false,
       };
 
@@ -251,6 +258,41 @@ class TablesRepository {
     await _db.collection('table_sessions').doc(sessionId).update({'is_alert_triggered': true});
   }
 
+  /// Batalkan sesi yang sedang berjalan TANPA tagihan (mis. pelanggan batal
+  /// main atau sesi salah start). Sesi ditandai `batal` dengan biaya 0,
+  /// dan meja dikosongkan.
+  Future<void> cancelSession(String sessionId) async {
+    final sessionRef = _db.collection('table_sessions').doc(sessionId);
+    await _db.runTransaction((tx) async {
+      // ===== FASE READ: semua read wajib SEBELUM write =====
+      final snap = await tx.get(sessionRef);
+      if (!snap.exists) return;
+      final s = TableSession.fromFirestore(sessionId, snap.data()!);
+      if (!s.isRunning) return;
+
+      final tableRef = _db.collection('tables').doc(s.tableId);
+      final tableSnap = await tx.get(tableRef);
+
+      final now = DateTime.now();
+      tx.update(sessionRef, {
+        'status': SessionStatus.batal.storageValue,
+        'waktu_selesai': Timestamp.fromDate(now),
+        'durasi_menit': s.elapsedAt(now).inMinutes,
+        'biaya': 0,
+      });
+      if (tableSnap.exists) {
+        final t = BillTable.fromFirestore(s.tableId, tableSnap.data()!);
+        // Hanya kosongkan bila meja masih menunjuk sesi ini.
+        if (t.currentSessionId == sessionId) {
+          tx.update(tableRef, {
+            'status': TableStatus.kosong.storageValue,
+            'current_session_id': FieldValue.delete(),
+          });
+        }
+      }
+    });
+  }
+
   Future<void> addExtraCharge({
     required String sessionId,
     required String nama,
@@ -271,7 +313,12 @@ class TablesRepository {
         ditambahkanOleh: kasirId,
         waktuDitambahkan: DateTime.now(),
       );
-      tx.update(ref, {'biaya_tambahan': [...s.biayaTambahan, newCharge.toMap()]});
+      tx.update(ref, {
+        'biaya_tambahan': [
+          ...s.biayaTambahan.map((c) => c.toMap()),
+          newCharge.toMap(),
+        ],
+      });
     });
   }
 

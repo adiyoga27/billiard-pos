@@ -4,7 +4,9 @@ import '../../pos/domain/product_models.dart';
 import '../../tables/domain/table_models.dart';
 
 class ReportsRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  ReportsRepository({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   /// Ambil transaksi dalam rentang waktu (dari awal hari [from] sampai akhir hari [to]).
   Future<List<Transaction>> transactionsInRange({

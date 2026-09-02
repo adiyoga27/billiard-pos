@@ -147,8 +147,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             value: sessionBill.rentalFee,
                             bold: true,
                           ),
-                          for (final ap in attached.paketTambahan)
-                            _BillRow(label: 'Paket tambahan: ${ap.namaPaket}', value: ap.harga),
+                          for (final g in groupAddedPackages(attached.paketTambahan))
+                            _BillRow(
+                              label: g.qty > 1
+                                  ? 'Paket tambahan: ${g.namaPaket} × ${g.qty}'
+                                  : 'Paket tambahan: ${g.namaPaket}',
+                              value: g.subtotal,
+                            ),
                           if (sessionBill.extraChargesTotal > 0)
                             _BillRow(
                               label: 'Biaya tambahan (${attached.biayaTambahan.length} item)',
@@ -257,6 +262,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     child: TextField(
                       controller: _discountCtrl,
                       keyboardType: TextInputType.number,
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         labelText: _discountIsPercent ? 'Diskon (%)' : 'Diskon (Rp)',
                         isDense: true,
@@ -267,6 +273,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   Expanded(
                     child: TextField(
                       controller: _discountReasonCtrl,
+                      onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(labelText: 'Alasan (opsional)', isDense: true),
                     ),
                   ),
@@ -280,6 +287,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               TextField(
                 controller: _cashCtrl,
                 keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
                 decoration: const InputDecoration(
                   labelText: 'Uang tunai (Rp)',
                   prefixIcon: Icon(Icons.payments_outlined),
@@ -429,6 +437,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       widget.onSuccess?.call();
 
       if (!mounted) return;
+      setState(() => _saving = false);
       // Tampilkan struk dulu (dialog hasil, bukan form), lalu tutup halaman.
       await showDialog<void>(
         context: context,
@@ -437,6 +446,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _saving = false;
         _error = 'Gagal menyimpan transaksi: $e';

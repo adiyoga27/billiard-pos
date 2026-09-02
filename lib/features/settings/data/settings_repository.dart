@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../domain/settings_models.dart';
 
 class SettingsRepository {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
+
+  SettingsRepository({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   static const _docId = 'global';
 

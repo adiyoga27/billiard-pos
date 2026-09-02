@@ -53,6 +53,7 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
                 session: session,
                 onReserve: () => _setReserved(!table.isAvailable),
                 onStart: () => _startSession(table, settings),
+                onCancel: () => _cancelSession(session!, table),
                 onFinish: () => _checkoutAndFinish(session!, table),
               ),
               Expanded(
@@ -96,6 +97,44 @@ class _TableDetailScreenState extends ConsumerState<TableDetailScreen> {
       },
     });
   }
+
+  /// Batalkan sesi TANPA tagihan: sesi ditandai batal, meja kosong,
+  /// pesanan meja & paket tambahan ikut dibatalkan.
+  Future<void> _cancelSession(TableSession session, BillTable table) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Batalkan Sesi?'),
+        content: const Text(
+          'Sesi ini akan dibatalkan TANPA tagihan.\n'
+          'Pesanan meja, paket tambahan, dan biaya tambahan ikut dibatalkan. '
+          'Meja akan kembali kosong.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Tidak')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.tableUsed),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Ya, Batalkan'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(tablesRepositoryProvider).cancelSession(session.id);
+      ref.read(tableCartControllerProvider.notifier).clearTable(table.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Sesi ${table.namaMeja} dibatalkan — meja kembali kosong')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membatalkan: $e')));
+      }
+    }
+  }
 }
 
 /// Header halaman detail meja — tombol aksi jadi icon-only di layar sempit
@@ -105,6 +144,7 @@ class _TableHeader extends StatelessWidget {
   final TableSession? session;
   final VoidCallback onReserve;
   final VoidCallback onStart;
+  final VoidCallback onCancel;
   final VoidCallback onFinish;
 
   const _TableHeader({
@@ -112,6 +152,7 @@ class _TableHeader extends StatelessWidget {
     required this.session,
     required this.onReserve,
     required this.onStart,
+    required this.onCancel,
     required this.onFinish,
   });
 
@@ -156,6 +197,21 @@ class _TableHeader extends StatelessWidget {
               ))
         : null;
 
+    final cancelBtn = session != null
+        ? (compact
+            ? IconButton.outlined(
+                tooltip: 'Batalkan Sesi (tanpa tagihan)',
+                onPressed: onCancel,
+                icon: const Icon(Icons.cancel_outlined, size: 20, color: AppTheme.tableUsed),
+              )
+            : OutlinedButton.icon(
+                onPressed: onCancel,
+                style: OutlinedButton.styleFrom(foregroundColor: AppTheme.tableUsed),
+                icon: const Icon(Icons.cancel_outlined),
+                label: const Text('Batalkan Sesi'),
+              ))
+        : null;
+
     final finishBtn = session != null
         ? (compact
             ? IconButton.filled(
@@ -176,6 +232,7 @@ class _TableHeader extends StatelessWidget {
       actions: [
         ?reserveBtn,
         ?startBtn,
+        ?cancelBtn,
         ?finishBtn,
       ],
     );
@@ -288,19 +345,35 @@ class _HistoryTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${formatDateTime(session.waktuMulai)} — ${session.waktuSelesai != null ? formatClock(session.waktuSelesai!) : '?'}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Durasi ${session.durasiMenit ?? 0} mnt • ${session.kasirNama ?? 'Kasir'}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
             Text(
+              '${formatDateTime(session.waktuMulai)} — ${session.waktuSelesai != null ? formatClock(session.waktuSelesai!) : '?'}',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Durasi ${session.durasiMenit ?? 0} mnt • ${session.kasirNama ?? 'Kasir'}',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ),
+      session.status == SessionStatus.batal
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: AppTheme.tableUsed.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'Dibatalkan',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.tableUsed,
+                ),
+              ),
+            )
+          : Text(
               formatRupiah(session.biaya),
               style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark),
             ),
@@ -337,13 +410,18 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
   BillTable get table => widget.table;
   DateTime get now => widget.now;
 
-  Future<void> _cancelAddedPackage(BuildContext context, AddedPackage ap) async {
+  Future<void> _cancelAddedPackage(
+    BuildContext context,
+    AddedPackage ap, {
+    int totalQty = 1,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Batalkan Paket?'),
         content: Text(
-          '${ap.namaPaket} (${formatRupiah(ap.harga)}) akan dihapus dari tagihan${ap.durasiMenit != null ? ' dan durasi ${ap.durasiMenit! ~/ 60}j ${ap.durasiMenit! % 60}m dikembalikan' : ''}.',
+          '${totalQty > 1 ? '1 dari $totalQty ' : ''}${ap.namaPaket} (${formatRupiah(ap.harga)}) akan dihapus dari tagihan'
+          '${ap.durasiMenit != null ? ' dan durasi ${ap.durasiMenit! ~/ 60}j ${ap.durasiMenit! % 60}m dikembalikan' : ''}.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Tidak')),
@@ -663,7 +741,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                 ),
               )
             else
-              for (final ap in session.paketTambahan)
+              for (final g in groupAddedPackages(session.paketTambahan))
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
@@ -673,13 +751,13 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              ap.namaPaket,
+                              g.qty > 1 ? '${g.namaPaket} × ${g.qty}' : g.namaPaket,
                               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
                               overflow: TextOverflow.ellipsis,
                             ),
-                            if (ap.durasiMenit != null)
+                            if (g.durasiMenit != null)
                               Text(
-                                '+${ap.durasiMenit! ~/ 60}j ${ap.durasiMenit! % 60}m',
+                                '+${g.durasiMenit! ~/ 60}j ${g.durasiMenit! % 60}m',
                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                               ),
                           ],
@@ -689,14 +767,15 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                       SizedBox(
                         width: 90,
                         child: Text(
-                          formatRupiah(ap.harga),
+                          formatRupiah(g.subtotal),
                           textAlign: TextAlign.right,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
                       IconButton(
-                        tooltip: 'Batalkan paket',
-                        onPressed: () => _cancelAddedPackage(context, ap),
+                        tooltip: g.qty > 1 ? 'Batalkan 1 paket' : 'Batalkan paket',
+                        onPressed: () =>
+                            _cancelAddedPackage(context, g.entries.first, totalQty: g.qty),
                         icon: const Icon(Icons.close_rounded, size: 18, color: AppTheme.tableUsed),
                       ),
                     ],

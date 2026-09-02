@@ -43,10 +43,9 @@ class _AddPackageScreenState extends ConsumerState<AddPackageScreen> {
         context.pop();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _adding.remove(p.id));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal: $e')));
     }
   }
 
