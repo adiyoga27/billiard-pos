@@ -217,16 +217,25 @@ class _ModeCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.billiardGreen.withValues(alpha: 0.08) : Colors.white,
+          color: selected
+              ? AppTheme.billiardGreenDark.withValues(alpha: 0.10)
+              : Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? AppTheme.billiardGreen : Colors.grey.shade300,
+            color: selected
+                ? AppTheme.billiardGreenDark
+                : Theme.of(context).colorScheme.outlineVariant,
             width: selected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? AppTheme.billiardGreenDark : Colors.grey.shade500, size: 26),
+            Icon(
+                icon,
+                color: selected
+                    ? AppTheme.billiardGreenDark
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                size: 26),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -234,12 +243,15 @@ class _ModeCard extends StatelessWidget {
                 children: [
                   Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
             if (selected)
-              const Icon(Icons.check_circle_rounded, color: AppTheme.billiardGreen, size: 20),
+              const Icon(Icons.check_circle_rounded, color: AppTheme.billiardGreenDark, size: 20),
           ],
         ),
       ),

@@ -252,23 +252,27 @@ class _SummaryChip extends StatelessWidget {
       duration: const Duration(milliseconds: 250),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: active ? color.withValues(alpha: 0.10) : Colors.grey.shade100,
+        color: active
+            ? color.withValues(alpha: 0.10)
+            : Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: active ? color.withValues(alpha: 0.35) : Colors.grey.shade200,
+          color: active ? color.withValues(alpha: 0.35) : Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: active ? color : Colors.grey.shade400),
+          Icon(icon,
+              size: 15,
+              color: active ? color : Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(width: 6),
           Text(
             '$count',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: active ? AppTheme.ink : Colors.grey.shade400,
+              color: active ? AppTheme.ink : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 4),
@@ -277,7 +281,7 @@ class _SummaryChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: active ? Colors.grey.shade700 : Colors.grey.shade400,
+              color: active ? AppTheme.ink : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -481,7 +485,9 @@ class _TableCardState extends ConsumerState<_TableCard>
                                 const SizedBox(height: 2),
                                 Text(
                                   '${formatRupiah(table.tarifPerJam)} / jam',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 ),
                               ],
                             ),
@@ -508,13 +514,15 @@ class _TableCardState extends ConsumerState<_TableCard>
                                   Row(
                                     children: [
                                       Icon(Icons.schedule_rounded,
-                                          size: 16, color: Colors.grey.shade500),
+                                          size: 16,
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant),
                                       const SizedBox(width: 4),
                                       Text(
                                         formatDuration(elapsed),
                                         style: const TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w800,
+                                          color: AppTheme.ink,
                                           fontFeatures: [FontFeature.tabularFigures()],
                                           height: 1.0,
                                         ),
@@ -531,7 +539,7 @@ class _TableCardState extends ConsumerState<_TableCard>
                                         fontWeight: FontWeight.w700,
                                         color: session.isOverdue
                                             ? AppTheme.tableTimeout
-                                            : Colors.grey.shade600,
+                                            : Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],
@@ -544,7 +552,9 @@ class _TableCardState extends ConsumerState<_TableCard>
                               children: [
                                 Text(
                                   'Estimasi',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                                 ),
                                 Text(
                                   formatRupiah(bill!.subtotal),
@@ -588,26 +598,30 @@ class _TableCardState extends ConsumerState<_TableCard>
                               ),
                           ],
                         ),
-                      ] else if (reserved) ...[
-                        Row(
-                          children: [
-                            Icon(Icons.event_available_rounded,
-                                size: 16, color: AppTheme.tableReserved),
-                            const SizedBox(width: 6),
-                            Text('Menunggu dimulai',
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                          ],
-                        ),
-                      ] else ...[
-                        Row(
-                          children: [
-                            const Icon(Icons.check_circle_outline_rounded,
-                                size: 16, color: AppTheme.tableFree),
-                            const SizedBox(width: 6),
-                            Text('Siap digunakan',
-                                style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                          ],
-                        ),
+                       ] else if (reserved) ...[
+                         Row(
+                           children: [
+                             Icon(Icons.event_available_rounded,
+                                 size: 16, color: AppTheme.tableReserved),
+                             const SizedBox(width: 6),
+                             Text('Menunggu dimulai',
+                                 style: TextStyle(
+                                     fontSize: 13,
+                                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                           ],
+                         ),
+                       ] else ...[
+                         Row(
+                           children: [
+                             const Icon(Icons.check_circle_outline_rounded,
+                                 size: 16, color: AppTheme.tableFree),
+                             const SizedBox(width: 6),
+                             Text('Siap digunakan',
+                                 style: TextStyle(
+                                     fontSize: 13,
+                                     color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                           ],
+                         ),
                       ],
                     ],
                   ),
@@ -725,17 +739,19 @@ class _DashboardError extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 40, color: Colors.grey.shade400),
+            Icon(Icons.error_outline_rounded,
+                size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text(
               'Gagal memuat meja',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.ink),
             ),
             const SizedBox(height: 4),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(
+                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -760,8 +776,9 @@ class _DashboardEmpty extends StatelessWidget {
               height: 64,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppTheme.billiardGreen.withValues(alpha: 0.10),
+                color: AppTheme.billiardGreenDark.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.billiardGreenDark.withValues(alpha: 0.25)),
               ),
               child: Icon(AppTheme.billiardIcon, size: 30, color: AppTheme.billiardGreenDark),
             ),
@@ -774,7 +791,8 @@ class _DashboardEmpty extends StatelessWidget {
             Text(
               'Tambahkan meja pertama untuk mulai memantau status secara real-time.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(
+                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),

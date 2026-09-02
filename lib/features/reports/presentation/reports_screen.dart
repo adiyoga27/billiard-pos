@@ -111,7 +111,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                         ? Center(
                                             child: Text(
                                               'Belum ada penjualan di rentang ini',
-                                              style: TextStyle(color: Colors.grey.shade500),
+                                              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                             ),
                                           )
                                         : _RevenueChart(revenuePerDay: report.revenuePerDay),
@@ -154,7 +154,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                                       child: Center(
                                         child: Text(
                                           'Tidak ada transaksi',
-                                          style: TextStyle(color: Colors.grey.shade500),
+                                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                         ),
                                       ),
                                     )
@@ -239,7 +239,7 @@ class _RevenueChart extends StatelessWidget {
         maxY: (maxVal * 1.2).clamp(1, double.infinity),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => AppTheme.ink,
+            getTooltipColor: (_) => AppTheme.cardDarkHigh,
             getTooltipItem: (group, groupIndex, rod, rodIndex) => BarTooltipItem(
               '${days[groupIndex].day}/${days[groupIndex].month}\n${formatRupiah(rod.toY.toInt())}',
               const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
@@ -253,7 +253,8 @@ class _RevenueChart extends StatelessWidget {
               reservedSize: 56,
               getTitlesWidget: (value, meta) => Text(
                 formatRupiahShort(value),
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                style: TextStyle(
+                    fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           ),
@@ -267,7 +268,8 @@ class _RevenueChart extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     '${days[i].day}/${days[i].month}',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                    style: TextStyle(
+                    fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 );
               },
@@ -291,7 +293,7 @@ class _RevenueChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: revenuePerDay[days[i]]!.toDouble(),
-                  color: AppTheme.billiardGreen,
+                  color: AppTheme.billiardGreenDark,
                   width: days.length > 15 ? 8 : 18,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                 ),
@@ -389,7 +391,10 @@ class _SummaryCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
-            Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -416,7 +421,9 @@ class _TopProductsCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Center(
-                  child: Text('Belum ada data', style: TextStyle(color: Colors.grey.shade500)),
+                  child: Text('Belum ada data',
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               )
             else
@@ -432,7 +439,7 @@ class _TopProductsCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: i < 3
                               ? AppTheme.tableReserved.withValues(alpha: 0.2)
-                              : Colors.grey.shade100,
+                              : Theme.of(context).colorScheme.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -440,7 +447,9 @@ class _TopProductsCard extends StatelessWidget {
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 12,
-                            color: i < 3 ? AppTheme.tableReserved : Colors.grey.shade600,
+                            color: i < 3
+                                ? AppTheme.tableReserved
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -489,7 +498,9 @@ class _PerTableCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Center(
-                  child: Text('Belum ada data', style: TextStyle(color: Colors.grey.shade500)),
+                  child: Text('Belum ada data',
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
               )
             else

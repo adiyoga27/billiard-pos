@@ -138,13 +138,15 @@ class _SessionAlertListenerState extends ConsumerState<SessionAlertListener> {
               const SizedBox(height: 6),
               Text(
                 'Durasi sesi: ${formatDurationHuman(session.waktuSelesaiTarget!.difference(session.waktuMulai))}',
-                style: TextStyle(color: Colors.grey.shade600),
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               if (!overdue) ...[
                 const SizedBox(height: 6),
                 Text(
                   'Perpanjang waktu atau selesaikan sekarang.',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ],
             ],

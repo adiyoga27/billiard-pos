@@ -60,9 +60,12 @@ class StaffManagementScreen extends ConsumerWidget {
                       child: Text(s.nama, style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                     if (isMe)
-                      const Padding(
-                        padding: EdgeInsets.only(left: 6),
-                        child: Text('(Anda)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: Text('(Anda)',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant)),
                       ),
                   ],
                 ),

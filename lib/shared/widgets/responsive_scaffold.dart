@@ -182,12 +182,12 @@ class _BrandMark extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+          colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
         ),
         borderRadius: BorderRadius.circular(compact ? 12 : 13),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.billiardGreen.withValues(alpha: 0.35),
+            color: AppTheme.billiardGreenNeon.withValues(alpha: 0.30),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -225,7 +225,7 @@ class _BrandMark extends StatelessWidget {
                   fontSize: 9.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.8,
-                  color: dark ? AppTheme.billiardGreen : AppTheme.billiardGreenDark,
+                  color: dark ? AppTheme.billiardGreen : AppTheme.billiardGreenNeon,
                 ),
               ),
             ],
@@ -275,12 +275,12 @@ class _LogoutButton extends ConsumerWidget {
   }
 }
 
-/// Palet warna sidebar gelap (kontras dengan area konten yang terang).
+/// Palet warna sidebar gelap (selaras tema dark premium).
 abstract final class _Sb {
-  static const bg = Color(0xFF0F172A);
-  static const text = Color(0xFFE2E8F0);
-  static const textDim = Color(0xFF94A3B8);
-  static const label = Color(0xFF64748B);
+  static const bg = AppTheme.panel;
+  static const text = AppTheme.inkOnDark;
+  static const textDim = Color(0xFF93A5C4);
+  static const label = Color(0xFF55688C);
 }
 
 /// Tombol kecil untuk menciutkan / memperluas sidebar.
@@ -444,7 +444,7 @@ class _SidebarMini extends ConsumerWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                          colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
                         ),
                         shape: BoxShape.circle,
                       ),
@@ -539,7 +539,7 @@ class _UserCard extends ConsumerWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
               ),
               shape: BoxShape.circle,
             ),
@@ -651,14 +651,14 @@ class _NavItem extends StatelessWidget {
                         ? const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                            colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
                           )
                         : null,
                     borderRadius: BorderRadius.circular(11),
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: AppTheme.billiardGreen.withValues(alpha: 0.35),
+                              color: AppTheme.billiardGreenNeon.withValues(alpha: 0.30),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -734,14 +734,14 @@ class _MiniNavItem extends StatelessWidget {
                     ? const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                        colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
                       )
                     : null,
                 borderRadius: BorderRadius.circular(13),
                 boxShadow: selected
                     ? [
                         BoxShadow(
-                          color: AppTheme.billiardGreen.withValues(alpha: 0.35),
+                          color: AppTheme.billiardGreenNeon.withValues(alpha: 0.30),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -845,7 +845,7 @@ class _NavRail extends ConsumerWidget {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                            colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
                           ),
                           shape: BoxShape.circle,
                         ),
@@ -902,6 +902,7 @@ class EmptyState extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppTheme.billiardGreen.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.billiardGreen.withValues(alpha: 0.20)),
               ),
               child: Icon(icon, size: 40, color: AppTheme.billiardGreen),
             ),
@@ -916,7 +917,8 @@ class EmptyState extends StatelessWidget {
               Text(
                 hint!,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                style: TextStyle(
+                    fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ],
             if (action != null) ...[
@@ -978,9 +980,9 @@ class PageHeader extends StatelessWidget {
         ? Container(
             margin: const EdgeInsets.only(right: 14),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back_rounded, size: 22),
@@ -1010,7 +1012,11 @@ class PageHeader extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     subtitle!,
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
             ],

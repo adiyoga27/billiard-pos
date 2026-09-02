@@ -277,7 +277,8 @@ class _EmptyTable extends ConsumerWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Tekan "Mulai Sesi" untuk mengaktifkan timer & menghitung biaya real-time.',
-                          style: TextStyle(color: Colors.grey.shade600),
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -301,7 +302,9 @@ class _EmptyTable extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Center(
-                      child: Text('Belum ada riwayat', style: TextStyle(color: Colors.grey.shade500)),
+                      child: Text('Belum ada riwayat',
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ),
                   ),
                 );
@@ -352,7 +355,7 @@ class _HistoryTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               'Durasi ${session.durasiMenit ?? 0} mnt • ${session.kasirNama ?? 'Kasir'}',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -470,7 +473,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
         gradient: LinearGradient(
           colors: overdue
               ? [AppTheme.tableTimeout, AppTheme.tableUsed]
-              : [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+              : [AppTheme.billiardGreenDark, AppTheme.billiardGreen],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -651,12 +654,12 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Belum ada pesanan untuk meja ini.',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                 ),
               )
             else
@@ -732,12 +735,12 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
+                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'Belum ada paket tambahan. Paket bisa dibeli di tengah sesi untuk menambah durasi.',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 13),
                 ),
               )
             else
@@ -758,7 +761,7 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
                             if (g.durasiMenit != null)
                               Text(
                                 '+${g.durasiMenit! ~/ 60}j ${g.durasiMenit! % 60}m',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                           ],
                         ),
@@ -899,8 +902,11 @@ class _MiniQty extends StatelessWidget {
           child: Container(
             width: 26,
             height: 26,
-            decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
-            child: const Icon(Icons.remove_rounded, size: 15),
+            decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(6)),
+            child: Icon(Icons.remove_rounded,
+                size: 15, color: Theme.of(context).colorScheme.onSurface),
           ),
         ),
         Padding(
@@ -937,9 +943,9 @@ class _InfoChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -80,7 +80,9 @@ class _ExtendFormScreenState extends ConsumerState<ExtendFormScreen> {
               padding: const EdgeInsets.only(top: 12),
               child: Text(
                 'Sudah diperpanjang: ${session.riwayatPerpanjangan.join(' + ')} menit (total ${session.extendedMinutes} mnt).',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                style: TextStyle(
+                    fontSize: 12.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
             ),
           if (_error != null)

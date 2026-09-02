@@ -64,13 +64,16 @@ class _ProductGridState extends State<ProductGrid> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.grey.shade300),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Icon(Icons.tune_rounded,
+                          size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 6),
                       Text(
                         widget.categories.where((c) => c.id == _selectedCategory).firstOrNull?.nama ??
                             'Semua',
@@ -106,7 +109,10 @@ class _ProductGridState extends State<ProductGrid> {
         Expanded(
           child: filtered.isEmpty
               ? Center(
-                  child: Text('Produk tidak ditemukan', style: TextStyle(color: Colors.grey.shade500)),
+                  child: Text(
+                    'Produk tidak ditemukan',
+                    style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
                 )
               : GridView.builder(
                   padding: widget.padding,
@@ -184,8 +190,8 @@ class _ProductCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          AppTheme.billiardGreen.withValues(alpha: 0.14),
-                          AppTheme.billiardGreen.withValues(alpha: 0.05),
+                          AppTheme.billiardGreenDark.withValues(alpha: 0.16),
+                          AppTheme.billiardGreenDark.withValues(alpha: 0.04),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
@@ -207,7 +213,8 @@ class _ProductCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   formatRupiah(product.harga),
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.billiardGreenDark),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.billiardGreenDark),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -220,7 +227,9 @@ class _ProductCard extends StatelessWidget {
                             : (product.stok <= 10 ? 'Sisa ${product.stok}' : (categoryName ?? 'Produk')),
                         style: TextStyle(
                           fontSize: 11,
-                          color: product.stok <= 10 && !disabled ? AppTheme.tableReserved : Colors.grey.shade500,
+                          color: product.stok <= 10 && !disabled
+                              ? AppTheme.tableReserved
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,

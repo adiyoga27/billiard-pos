@@ -118,11 +118,16 @@ class _ChargeFormScreenState extends ConsumerState<ChargeFormScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Biaya tambahan aktif:',
-                      style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600, fontWeight: FontWeight.w700)),
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700)),
                   for (final c in widget.session.biayaTambahan)
                     Text(
                       '• ${c.nama} (${c.jumlah}x) — Rp ${c.subtotal}',
-                      style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                 ],
               ),

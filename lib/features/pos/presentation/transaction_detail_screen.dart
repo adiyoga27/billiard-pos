@@ -33,7 +33,8 @@ class TransactionDetailScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.search_off_rounded, size: 56, color: Colors.grey.shade300),
+                  Icon(Icons.search_off_rounded,
+                      size: 56, color: Theme.of(context).colorScheme.outline),
                   const SizedBox(height: 10),
                   const Text('Transaksi tidak ditemukan'),
                   const SizedBox(height: 16),
@@ -81,19 +82,21 @@ class TransactionDetailScreen extends ConsumerWidget {
                             const SizedBox(height: 8),
                             Text(
                               formatDateTime(tx.createdAt),
-                              style: TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                             Text(
                               'Kasir: ${tx.kasirNama ?? '-'}${tx.tableName != null ? ' • Meja ${tx.tableName}' : ''}',
-                              style: TextStyle(color: Colors.grey.shade600),
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                             if (tx.namaMember != null)
                               Text(
                                 'Member: ${tx.namaMember}',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                               ),
                           ],
                         ),
@@ -205,6 +208,7 @@ class TransactionDetailScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.grey.shade200),
             ),
             child: Text(
               text,
@@ -242,7 +246,9 @@ class _Row extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: color ?? Colors.grey.shade700)),
+          Text(label,
+              style: TextStyle(
+                  color: color ?? Theme.of(context).colorScheme.onSurfaceVariant)),
           Text(value, style: TextStyle(fontWeight: FontWeight.w700, color: color)),
         ],
       ),

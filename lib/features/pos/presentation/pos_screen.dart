@@ -82,11 +82,14 @@ class PosScreen extends ConsumerWidget {
                       children: [
                         Text(
                           '${cart.itemCount} item',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         Text(
                           formatRupiah(cart.subtotal),
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.ink),
                         ),
                       ],
                     ),
@@ -133,9 +136,9 @@ class _CartPanel extends ConsumerWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
       ),
       child: Column(
         children: [
@@ -143,7 +146,8 @@ class _CartPanel extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
             child: Row(
               children: [
-                const Icon(Icons.shopping_cart_outlined, size: 22, color: AppTheme.billiardGreenDark),
+                const Icon(Icons.shopping_cart_outlined,
+                    size: 22, color: AppTheme.billiardGreenDark),
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
@@ -168,13 +172,16 @@ class _CartPanel extends ConsumerWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_shopping_cart_outlined, size: 48, color: Colors.grey.shade300),
+                        Icon(Icons.add_shopping_cart_outlined,
+                            size: 48, color: Theme.of(context).colorScheme.outline),
                         const SizedBox(height: 8),
-                        Text('Keranjang kosong', style: TextStyle(color: Colors.grey.shade500)),
+                        Text('Keranjang kosong',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         const SizedBox(height: 4),
                         Text(
                           'Tap produk untuk menambahkan',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                          style: TextStyle(
+                              fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -191,15 +198,17 @@ class _CartPanel extends ConsumerWidget {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppTheme.billiardGreen.withValues(alpha: 0.1),
+                            color: AppTheme.billiardGreenDark.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.fastfood_rounded, size: 20, color: AppTheme.billiardGreenDark),
+                          child: const Icon(Icons.fastfood_rounded,
+                              size: 20, color: AppTheme.billiardGreenDark),
                         ),
                         title: Text(item.product.nama, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
                         subtitle: Text(
                           '${formatRupiah(item.product.harga)} x ${item.qty}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          style: TextStyle(
+                              fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -241,7 +250,8 @@ class _CartPanel extends ConsumerWidget {
                     const Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                     Text(
                       formatRupiah(cart.subtotal - discountAmount(cart.subtotal, cart.discount)),
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark),
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark),
                     ),
                   ],
                 ),
@@ -283,10 +293,11 @@ class _QtyButton extends StatelessWidget {
         width: 30,
         height: 30,
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Theme.of(context).colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
-        child: Icon(icon, size: 16),
+        child: Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }
@@ -306,7 +317,7 @@ class _SummaryRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 13.5, color: color ?? Colors.grey.shade700)),
+          Text(label, style: TextStyle(fontSize: 13.5, color: color ?? Theme.of(context).colorScheme.onSurfaceVariant)),
           Text(
             '${value < 0 ? '-' : ''}${formatRupiah(value.abs())}',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: color),

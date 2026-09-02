@@ -64,7 +64,7 @@ class _AddPackageScreenState extends ConsumerState<AddPackageScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Text(
                   'Tidak ada paket durasi yang tersedia untuk meja ini saat ini. Cek syarat berlaku paket (hari/jam/meja).',
-                  style: TextStyle(color: Colors.grey.shade600),
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ),
             )

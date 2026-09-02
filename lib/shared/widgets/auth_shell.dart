@@ -47,7 +47,10 @@ class AuthShell extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           subtitle,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                         const SizedBox(height: 28),
                         form,
@@ -81,12 +84,12 @@ class AuthShell extends StatelessWidget {
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                        colors: [AppTheme.billiardGreenNeon, AppTheme.billiardGreen],
                       ),
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.billiardGreen.withValues(alpha: 0.35),
+                          color: AppTheme.billiardGreenNeon.withValues(alpha: 0.30),
                           blurRadius: 16,
                           offset: const Offset(0, 6),
                         ),
@@ -102,12 +105,15 @@ class AuthShell extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 28),
-                  form,
+                     subtitle,
+                     textAlign: TextAlign.center,
+                     style: Theme.of(context)
+                         .textTheme
+                         .bodyMedium
+                         ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                   ),
+                   const SizedBox(height: 28),
+                   form,
                 ],
               ),
             ),
@@ -126,7 +132,7 @@ class _BrandingPanel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0E7A5F), AppTheme.billiardGreenDark],
+          colors: [Color(0xFF065F46), Color(0xFF0B1220)],
         ),
       ),
       child: Stack(

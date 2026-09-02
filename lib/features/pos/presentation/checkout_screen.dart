@@ -142,7 +142,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               Text(
                                 formatDurationHuman(attached.elapsedAt(
                                     ref.watch(nowTickProvider).valueOrNull ?? DateTime.now())),
-                                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                                style: TextStyle(
+                        fontSize: 12.5,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                               ),
                             ],
                           ),
@@ -343,7 +345,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(
@@ -514,10 +516,14 @@ class _MethodCard extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.billiardGreen.withValues(alpha: 0.08) : Colors.white,
+          color: selected
+              ? AppTheme.billiardGreenDark.withValues(alpha: 0.10)
+              : Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected ? AppTheme.billiardGreen : Colors.grey.shade300,
+            color: selected
+                ? AppTheme.billiardGreenDark
+                : Theme.of(context).colorScheme.outlineVariant,
             width: selected ? 2 : 1,
           ),
         ),
@@ -554,7 +560,10 @@ class _Row extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(fontSize: 13.5, color: color ?? Colors.grey.shade700)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 13.5,
+                  color: color ?? Theme.of(context).colorScheme.onSurfaceVariant)),
           Text(
             '${value < 0 ? '-' : ''}${formatRupiah(value.abs())}',
             style: TextStyle(fontWeight: FontWeight.w700, color: color ?? AppTheme.ink),

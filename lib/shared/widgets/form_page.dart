@@ -44,7 +44,10 @@ class FormPage extends StatelessWidget {
                     ),
                     child: Text(
                       hint!,
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: Color(0xFF92600A)),
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF92600A)),
                     ),
                   ),
                   const SizedBox(height: 16),

@@ -86,7 +86,9 @@ class ProductManagementScreen extends ConsumerWidget {
                                   fontWeight: FontWeight.w800,
                                   color: p.outOfStock
                                       ? AppTheme.tableUsed
-                                      : (lowStock ? AppTheme.tableReserved : Colors.grey.shade500),
+                                      : (lowStock
+                                          ? AppTheme.tableReserved
+                                          : Theme.of(context).colorScheme.onSurfaceVariant),
                                 ),
                               ),
                             ],

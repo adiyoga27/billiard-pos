@@ -44,7 +44,8 @@ class ReceiptDialog extends ConsumerWidget {
               ),
               Text(
                 'Total ${formatRupiah(transaction.total)}',
-                style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark, fontSize: 18),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark, fontSize: 18),
               ),
               const SizedBox(height: 12),
               Container(
