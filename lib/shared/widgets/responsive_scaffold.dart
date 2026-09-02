@@ -77,9 +77,11 @@ class ResponsiveScaffold extends ConsumerWidget {
           children: [
             _Sidebar(user: user, destinations: destinations, selectedIndex: selectedIndex()),
             Expanded(
-              child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                child: child,
+              child: SafeArea(
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: child,
+                ),
               ),
             ),
           ],
@@ -93,9 +95,11 @@ class ResponsiveScaffold extends ConsumerWidget {
           children: [
             _NavRail(user: user, destinations: destinations, selectedIndex: selectedIndex()),
             Expanded(
-              child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                child: child,
+              child: SafeArea(
+                child: Container(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: child,
+                ),
               ),
             ),
           ],
@@ -104,7 +108,7 @@ class ResponsiveScaffold extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: child,
+      body: SafeArea(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex(),
         onDestinationSelected: (i) => context.go(destinations[i].route),

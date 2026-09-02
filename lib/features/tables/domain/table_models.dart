@@ -103,33 +103,45 @@ extension SessionStatusX on SessionStatus {
 /// Paket yang ditambahkan KETIKA sesi sedang berjalan (menambah durasi &
 /// menambah biaya). Misal beli "Paket 3 Jam" di tengah sesi → target + 3 jam.
 class AddedPackage {
+  final String id; // unik per pembelian, dipakai untuk membatalkan
   final String packageId;
   final String namaPaket;
   final int harga;
+  final int? durasiMenit; // durasi yang ditambahkan ke target (bila durasi flat)
   final DateTime waktuDitambahkan;
 
   const AddedPackage({
+    required this.id,
     required this.packageId,
     required this.namaPaket,
     required this.harga,
+    this.durasiMenit,
     required this.waktuDitambahkan,
   });
 
   factory AddedPackage.fromMap(Map<String, dynamic> map) {
     final raw = map['waktu_ditambahkan'];
     return AddedPackage(
+      id: map['id'] as String? ?? '',
       packageId: map['package_id'] as String? ?? '',
       namaPaket: map['nama_paket'] as String? ?? 'Paket',
       harga: (map['harga'] as num?)?.toInt() ?? 0,
-      waktuDitambahkan: raw is DateTime ? raw : DateTime.now(),
+      durasiMenit: (map['durasi_menit'] as num?)?.toInt(),
+      waktuDitambahkan: raw is Timestamp
+          ? raw.toDate()
+          : raw is DateTime
+              ? raw
+              : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toMap() => {
+        'id': id,
         'package_id': packageId,
         'nama_paket': namaPaket,
         'harga': harga,
-        'waktu_ditambahkan': waktuDitambahkan,
+        if (durasiMenit != null) 'durasi_menit': durasiMenit,
+        'waktu_ditambahkan': Timestamp.fromDate(waktuDitambahkan),
       };
 }
 

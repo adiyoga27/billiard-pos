@@ -47,10 +47,14 @@ final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
-      final auth = ref.read(authControllerProvider).valueOrNull;
-      final loggedIn = auth != null;
+      final authAsync = ref.read(authControllerProvider);
       final onAuthPage = state.matchedLocation == '/login' || state.matchedLocation == '/register';
 
+      // Saat stream auth masih memuat (mis. baru selesai login atau baru
+      // buka app), jangan redirect — hindari terlempar ke halaman login.
+      if (authAsync.isLoading) return null;
+
+      final loggedIn = authAsync.valueOrNull != null;
       if (!loggedIn && !onAuthPage) return '/login';
       if (loggedIn && onAuthPage) return '/';
       return null;

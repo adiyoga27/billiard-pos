@@ -109,18 +109,21 @@ class PosRepository {
     );
 
     final invoiceRef = _db.collection('transactions').doc();
-    final counterRef = _db.collection('counters').doc('transactions');
     late Transaction txDoc;
 
     await _db.runTransaction((tx) async {
-      // 1) Nomor invoice berurutan
+      // 1) Nomor invoice: INV-{tanggal Ymd}-{urutan transaksi hari itu}
+      final now = DateTime.now();
+      final dateKey = '${now.year}'
+          '${now.month.toString().padLeft(2, '0')}'
+          '${now.day.toString().padLeft(2, '0')}';
+      final counterRef = _db.collection('counters').doc(dateKey);
       final counterSnap = await tx.get(counterRef);
       final lastNumber = (counterSnap.data()?['last_invoice'] as num?)?.toInt() ?? 0;
       final newNumber = lastNumber + 1;
       tx.set(counterRef, {'last_invoice': newNumber}, SetOptions(merge: true));
 
-      final now = DateTime.now();
-      final nomor = 'INV-${newNumber.toString().padLeft(6, '0')}';
+      final nomor = 'INV-$dateKey${newNumber.toString().padLeft(3, '0')}';
 
       // 2) Biaya sesi meja (bila menyertakan sesi): baca sesi + meja di dalam tx
       int sessionBillAmount = 0;

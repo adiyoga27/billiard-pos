@@ -14,16 +14,49 @@ class AuthRepository {
   Stream<AppUser?> userStream() {
     return _auth.authStateChanges().asyncMap((user) async {
       if (user == null) return null;
-      final snap = await _db.collection('users').doc(user.uid).get();
-      if (!snap.exists) return null;
-      return AppUser.fromMap(user.uid, snap.data()!);
+      try {
+        final snap = await _db.collection('users').doc(user.uid).get();
+        if (!snap.exists) return null;
+        return AppUser.fromMap(user.uid, snap.data()!);
+      } catch (_) {
+        // Gagal baca dokumen (mis. jaringan putus sesaat): tetap anggap
+        // masih login supaya tidak tiba-tiba kembali ke halaman login.
+        return AppUser(
+          uid: user.uid,
+          nama: user.displayName ?? 'User',
+          email: user.email ?? '',
+          role: UserRole.kasir,
+        );
+      }
     });
   }
 
   String? get currentUid => _auth.currentUser?.uid;
 
-  Future<void> login({required String email, required String password}) async {
-    await _auth.signInWithEmailAndPassword(email: email.trim(), password: password);
+  /// Login dengan email atau username. Username di-resolve ke email lewat
+  /// koleksi `usernames` (read publik supaya bisa dipakai saat belum login).
+  Future<void> login({required String identifier, required String password}) async {
+    var email = identifier.trim();
+    if (!email.contains('@')) {
+      final snap = await _db.collection('usernames').doc(email.toLowerCase()).get();
+      if (!snap.exists) throw Exception('user-not-found');
+      email = (snap.data()!['email'] as String).trim();
+    }
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  /// Username otomatis diambil dari bagian depan email (sebelum @).
+  /// Jika sudah dipakai email lain, diberi akhiran angka.
+  Future<String> _resolveUsername(String email) async {
+    final trimmed = email.trim();
+    final base = trimmed.toLowerCase().split('@').first;
+    var username = base;
+    var suffix = 2;
+    while (true) {
+      final snap = await _db.collection('usernames').doc(username).get();
+      if (!snap.exists || snap.data()?['email'] == trimmed) return username;
+      username = '$base${suffix++}';
+    }
   }
 
   Future<void> logout() => _auth.signOut();
@@ -45,6 +78,10 @@ class AuthRepository {
       'email': email.trim(),
       'role': UserRole.admin.storageValue,
       'created_at': FieldValue.serverTimestamp(),
+    });
+    await _db.collection('usernames').doc(await _resolveUsername(email)).set({
+      'uid': uid,
+      'email': email.trim(),
     });
     return AppUser(uid: uid, nama: nama.trim(), email: email.trim(), role: UserRole.admin);
   }
@@ -78,6 +115,10 @@ class AuthRepository {
       'email': email.trim(),
       'role': UserRole.kasir.storageValue,
       'created_at': FieldValue.serverTimestamp(),
+    });
+    await _db.collection('usernames').doc(await _resolveUsername(email)).set({
+      'uid': uid,
+      'email': email.trim(),
     });
   }
 

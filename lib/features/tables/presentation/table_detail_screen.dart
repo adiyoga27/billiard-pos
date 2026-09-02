@@ -337,6 +337,38 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
   BillTable get table => widget.table;
   DateTime get now => widget.now;
 
+  Future<void> _cancelAddedPackage(BuildContext context, AddedPackage ap) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Batalkan Paket?'),
+        content: Text(
+          '${ap.namaPaket} (${formatRupiah(ap.harga)}) akan dihapus dari tagihan${ap.durasiMenit != null ? ' dan durasi ${ap.durasiMenit! ~/ 60}j ${ap.durasiMenit! % 60}m dikembalikan' : ''}.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Tidak')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Batalkan Paket')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(tablesRepositoryProvider).removePackageFromSession(
+            sessionId: session.id,
+            addedPackageId: ap.id,
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${ap.namaPaket} dibatalkan')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal membatalkan: $e')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final elapsed = session.elapsedAt(now);
@@ -498,18 +530,6 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
             if (session.mode == SessionMode.durasiTetap) const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () => context.push('/add-package', extra: session),
-                icon: const Icon(Icons.card_giftcard_rounded),
-                label: const Text('Tambah Paket'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
                 onPressed: () => context.push('/charge-form', extra: session),
                 icon: const Icon(Icons.add_circle_outline_rounded),
                 label: const Text('Biaya Tambahan'),
@@ -609,6 +629,93 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
       ),
     );
 
+    // ===== PAKET DITAMBAHKAN (beli di tengah sesi) =====
+    final addedPackagesCard = Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.card_giftcard_rounded, color: AppTheme.tableReserved, size: 20),
+                const SizedBox(width: 8),
+                Text('Paket Ditambahkan', style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                Text(
+                  formatRupiah(session.paketTambahanTotal),
+                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.tableReserved),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (session.paketTambahan.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Belum ada paket tambahan. Paket bisa dibeli di tengah sesi untuk menambah durasi.',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                ),
+              )
+            else
+              for (final ap in session.paketTambahan)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ap.namaPaket,
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (ap.durasiMenit != null)
+                              Text(
+                                '+${ap.durasiMenit! ~/ 60}j ${ap.durasiMenit! % 60}m',
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 90,
+                        child: Text(
+                          formatRupiah(ap.harga),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Batalkan paket',
+                        onPressed: () => _cancelAddedPackage(context, ap),
+                        icon: const Icon(Icons.close_rounded, size: 18, color: AppTheme.tableUsed),
+                      ),
+                    ],
+                  ),
+                ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => context.push('/add-package', extra: session),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Tambah Paket'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
     // Breakdown biaya
     final billCard = Card(
       child: Padding(
@@ -625,8 +732,11 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
               value: bill.rentalFee,
               bold: true,
             ),
-            for (final ap in session.paketTambahan)
-              _BillRow(label: 'Paket tambahan: ${ap.namaPaket}', value: ap.harga),
+            if (session.paketTambahan.isNotEmpty)
+              _BillRow(
+                label: 'Paket tambahan (${session.paketTambahan.length})',
+                value: bill.addedPackagesTotal,
+              ),
             if (bill.extraChargesTotal > 0)
               _BillRow(label: 'Biaya tambahan (${session.biayaTambahan.length} item)', value: bill.extraChargesTotal),
             if (bill.discountAmount > 0)
@@ -661,7 +771,13 @@ class _ActiveSessionViewState extends ConsumerState<_ActiveSessionView> {
               );
               final right = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [ordersCard, const SizedBox(height: 16), billCard],
+                children: [
+                  ordersCard,
+                  const SizedBox(height: 16),
+                  addedPackagesCard,
+                  const SizedBox(height: 16),
+                  billCard,
+                ],
               );
 
               if (constraints.maxWidth >= 960) {

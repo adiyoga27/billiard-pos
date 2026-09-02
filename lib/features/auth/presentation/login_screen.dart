@@ -28,10 +28,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
-    final email = _emailCtrl.text.trim();
+    final identifier = _emailCtrl.text.trim();
     final pass = _passCtrl.text;
-    if (email.isEmpty || pass.isEmpty) {
-      setState(() => _error = 'Email dan password wajib diisi.');
+    if (identifier.isEmpty || pass.isEmpty) {
+      setState(() => _error = 'Email/username dan password wajib diisi.');
       return;
     }
     setState(() {
@@ -39,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _error = null;
     });
     try {
-      await ref.read(authRepositoryProvider).login(email: email, password: pass);
+      await ref.read(authRepositoryProvider).login(identifier: identifier, password: pass);
       if (mounted) context.go('/');
     } catch (e) {
       setState(() => _error = _friendlyAuthError(e.toString()));
@@ -50,7 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   String _friendlyAuthError(String raw) {
     if (raw.contains('invalid-credential') || raw.contains('wrong-password') || raw.contains('user-not-found')) {
-      return 'Email atau password salah.';
+      return 'Email/username atau password salah.';
     }
     if (raw.contains('invalid-email')) return 'Format email tidak valid.';
     if (raw.contains('too-many-requests')) return 'Terlalu banyak percobaan. Coba lagi nanti.';
@@ -68,11 +68,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           TextField(
             controller: _emailCtrl,
-            keyboardType: TextInputType.emailAddress,
-            autofillHints: const [AutofillHints.email],
+            keyboardType: TextInputType.text,
+            autofillHints: const [AutofillHints.username],
             decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.mail_outline_rounded),
+              labelText: 'Email atau Username',
+              prefixIcon: Icon(Icons.person_outline_rounded),
             ),
           ),
           const SizedBox(height: 14),

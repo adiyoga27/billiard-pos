@@ -186,9 +186,11 @@ class TablesRepository {
       if (!s.isRunning) return;
 
       final added = AddedPackage(
+        id: '${DateTime.now().microsecondsSinceEpoch}-${paket.id}',
         packageId: paket.id,
         namaPaket: paket.namaPaket,
         harga: paket.harga,
+        durasiMenit: paket.durasiMenit,
         waktuDitambahkan: DateTime.now(),
       );
 
@@ -203,6 +205,42 @@ class TablesRepository {
         updates['waktu_selesai_target'] =
             Timestamp.fromDate(oldTarget.add(Duration(minutes: paket.durasiMenit!)));
         updates['riwayat_perpanjangan'] = [...s.riwayatPerpanjangan, paket.durasiMenit!];
+      }
+
+      tx.update(ref, updates);
+    });
+  }
+
+  /// Batalkan paket tambahan yang dibeli di tengah sesi:
+  /// hapus dari tagihan, kembalikan durasi yang ditambahkan (bila durasi flat),
+  /// dan hapus satu entri dari riwayat perpanjangan.
+  Future<void> removePackageFromSession({
+    required String sessionId,
+    required String addedPackageId,
+  }) async {
+    final ref = _db.collection('table_sessions').doc(sessionId);
+    await _db.runTransaction((tx) async {
+      final snap = await tx.get(ref);
+      if (!snap.exists) return;
+      final s = TableSession.fromFirestore(sessionId, snap.data()!);
+      if (!s.isRunning) return;
+      final target = s.paketTambahan.where((p) => p.id == addedPackageId).firstOrNull;
+      if (target == null) return;
+
+      final updates = <String, dynamic>{
+        'paket_tambahan':
+            s.paketTambahan.where((p) => p.id != addedPackageId).map((p) => p.toMap()).toList(),
+      };
+
+      // Kembalikan durasi yang ditambahkan paket durasi flat ke target selesai.
+      if (target.durasiMenit != null && s.waktuSelesaiTarget != null) {
+        updates['waktu_selesai_target'] =
+            Timestamp.fromDate(s.waktuSelesaiTarget!.subtract(Duration(minutes: target.durasiMenit!)));
+        final idx = s.riwayatPerpanjangan.indexOf(target.durasiMenit!);
+        if (idx >= 0) {
+          final riwayat = [...s.riwayatPerpanjangan]..removeAt(idx);
+          updates['riwayat_perpanjangan'] = riwayat;
+        }
       }
 
       tx.update(ref, updates);

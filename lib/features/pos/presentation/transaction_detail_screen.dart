@@ -11,7 +11,7 @@ import '../providers/pos_providers.dart';
 import 'package:go_router/go_router.dart';
 
 /// Detail transaksi — halaman target deep-link `/transaction/:invoiceId`
-/// (contoh dari notifikasi FCM payload `{"route": "/transaction/INV-000001"}`).
+/// (contoh dari notifikasi FCM payload `{"route": "/transaction/INV-20260901025"}`).
 class TransactionDetailScreen extends ConsumerWidget {
   final String invoiceId;
 

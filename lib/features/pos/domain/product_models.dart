@@ -110,7 +110,7 @@ extension PaymentMethodX on PaymentMethod {
 
 class Transaction {
   final String id;
-  final String nomor; // INV-000123
+  final String nomor; // INV-20260901025 (INV + tanggal + urutan hari itu)
   final String kasirId;
   final String? kasirNama;
   final String? tableSessionId;

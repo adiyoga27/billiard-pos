@@ -5,6 +5,8 @@
 /// Dipakai bersama oleh modul Meja Billiard & POS.
 library;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Mode pembulatan waktu sewa.
 enum RoundingMode { perMinute, per15Minutes, perHour }
 
@@ -114,7 +116,11 @@ class ExtraCharge {
       jumlah: (map['jumlah'] as num?)?.toInt() ?? 1,
       hargaSatuan: (map['harga_satuan'] as num?)?.toInt() ?? 0,
       ditambahkanOleh: map['ditambahkan_oleh'] as String? ?? '',
-      waktuDitambahkan: raw is DateTime ? raw : DateTime.now(),
+      waktuDitambahkan: raw is Timestamp
+          ? raw.toDate()
+          : raw is DateTime
+              ? raw
+              : DateTime.now(),
     );
   }
 
@@ -124,7 +130,7 @@ class ExtraCharge {
         'harga_satuan': hargaSatuan,
         'subtotal': subtotal,
         'ditambahkan_oleh': ditambahkanOleh,
-        'waktu_ditambahkan': waktuDitambahkan,
+        'waktu_ditambahkan': Timestamp.fromDate(waktuDitambahkan),
       };
 }
 

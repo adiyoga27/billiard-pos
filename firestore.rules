@@ -27,6 +27,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Pemetaan username -> email untuk login pakai username.
+    // Read publik karena diperlukan sebelum pengguna login.
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if signedIn()
+        && (request.auth.uid == request.resource.data.uid || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
     match /settings/{docId} {
       allow read: if signedIn();
       allow write: if isAdmin();
