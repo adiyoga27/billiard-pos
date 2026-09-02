@@ -7,6 +7,11 @@ import '../data/reports_repository.dart';
 final reportsRepositoryProvider = Provider<ReportsRepository>((ref) => ReportsRepository());
 
 /// Parameter filter laporan: rentang tanggal + kasir.
+///
+/// Wajib punya value equality (== & hashCode) supaya provider family
+/// menganggap filter yang isinya sama sebagai key yang sama — tanpa ini
+/// setiap rebuild layar membuat provider baru & layar laporan loading
+/// terus-menerus.
 class ReportFilter {
   final DateTime from;
   final DateTime to;
@@ -19,6 +24,16 @@ class ReportFilter {
         to: to ?? this.to,
         kasirId: kasirId ?? this.kasirId,
       );
+
+  @override
+  bool operator ==(Object other) =>
+      other is ReportFilter &&
+      other.from == from &&
+      other.to == to &&
+      other.kasirId == kasirId;
+
+  @override
+  int get hashCode => Object.hash(from, to, kasirId);
 }
 
 /// Data agregat laporan untuk sebuah filter.

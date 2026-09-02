@@ -202,28 +202,34 @@ class _BrandMark extends StatelessWidget {
       children: [
         mark,
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Yes Billiard',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                color: dark ? Colors.white : null,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Yes Billiard',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                  color: dark ? Colors.white : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'POS SYSTEM',
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.8,
-                color: dark ? AppTheme.billiardGreen : AppTheme.billiardGreenDark,
+              const SizedBox(height: 2),
+              Text(
+                'POS SYSTEM',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.8,
+                  color: dark ? AppTheme.billiardGreen : AppTheme.billiardGreenDark,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

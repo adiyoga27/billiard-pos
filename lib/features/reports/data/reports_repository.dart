@@ -9,23 +9,31 @@ class ReportsRepository {
   ReportsRepository({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   /// Ambil transaksi dalam rentang waktu (dari awal hari [from] sampai akhir hari [to]).
+  ///
+  /// Hanya pakai filter range `created_at` (single-field, tidak butuh
+  /// composite index); filter kasir dilakukan di sisi klien supaya laporan
+  /// selalu bisa dibuka tanpa deploy index manual.
   Future<List<Transaction>> transactionsInRange({
     required DateTime from,
     required DateTime to,
     String? kasirId,
   }) async {
-    var query = _db
+    final snap = await _db
         .collection('transactions')
         .where('created_at', isGreaterThanOrEqualTo: Timestamp.fromDate(from))
-        .where('created_at', isLessThanOrEqualTo: Timestamp.fromDate(to));
+        .where('created_at', isLessThanOrEqualTo: Timestamp.fromDate(to))
+        .orderBy('created_at', descending: true)
+        .get();
+    final list = snap.docs.map((d) => Transaction.fromFirestore(d.id, d.data())).toList();
     if (kasirId != null) {
-      query = query.where('kasir_id', isEqualTo: kasirId);
+      list.removeWhere((t) => t.kasirId != kasirId);
     }
-    final snap = await query.orderBy('created_at', descending: true).get();
-    return snap.docs.map((d) => Transaction.fromFirestore(d.id, d.data())).toList();
+    return list;
   }
 
   /// Sesi meja yang selesai dalam rentang (untuk pendapatan per meja).
+  /// Filter rentang dilakukan di sisi klien supaya query tidak butuh
+  /// composite index (status + waktu_selesai) di Firestore.
   Future<List<TableSession>> sessionsFinishedInRange({
     required DateTime from,
     required DateTime to,
@@ -33,10 +41,14 @@ class ReportsRepository {
     final snap = await _db
         .collection('table_sessions')
         .where('status', isEqualTo: 'selesai')
-        .where('waktu_selesai', isGreaterThanOrEqualTo: Timestamp.fromDate(from))
-        .where('waktu_selesai', isLessThanOrEqualTo: Timestamp.fromDate(to))
         .get();
-    return snap.docs.map((d) => TableSession.fromFirestore(d.id, d.data())).toList();
+    return snap.docs
+        .map((d) => TableSession.fromFirestore(d.id, d.data()))
+        .where((s) =>
+            s.waktuSelesai != null &&
+            !s.waktuSelesai!.isBefore(from) &&
+            !s.waktuSelesai!.isAfter(to))
+        .toList();
   }
 
   /// Agregasi penjualan per hari dalam rentang.

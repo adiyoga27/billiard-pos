@@ -385,14 +385,16 @@ class TablesRepository {
 
   Future<void> deletePackage(String id) => _db.collection('packages').doc(id).delete();
 
+  /// Riwayat sesi sebuah meja (terbaru dulu). Sortir dilakukan di sisi klien
+  /// supaya query tidak butuh composite index (table_id + waktu_mulai).
   Future<List<TableSession>> historyForTable(String tableId, {int limit = 50}) async {
     final snap = await _db
         .collection('table_sessions')
         .where('table_id', isEqualTo: tableId)
-        .orderBy('waktu_mulai', descending: true)
-        .limit(limit)
         .get();
-    return snap.docs.map((d) => TableSession.fromFirestore(d.id, d.data())).toList();
+    final list = snap.docs.map((d) => TableSession.fromFirestore(d.id, d.data())).toList()
+      ..sort((a, b) => b.waktuMulai.compareTo(a.waktuMulai));
+    return list.take(limit).toList();
   }
 
   /// Seed data demo: meja, kategori, produk, paket. Idempotent (cek keberadaan).
