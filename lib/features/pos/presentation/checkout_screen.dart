@@ -6,6 +6,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../settings/domain/settings_models.dart';
+import '../../tables/domain/package_models.dart';
 import '../../tables/domain/table_models.dart';
 import '../../tables/providers/tables_providers.dart';
 import '../domain/product_models.dart';
@@ -66,7 +67,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final attached = widget.sessionToFinalize;
-    final sessionFee = attached != null ? _sessionFee(attached, settings) : 0;
+    final sessionBill = attached != null ? _sessionBill(attached) : null;
+    final sessionFee = sessionBill?.subtotal ?? 0;
     final discount = _discount;
     final subtotal = widget.items.fold<int>(0, (acc, i) => acc + i.subtotal);
     final totals = calculateTransactionTotals(
@@ -104,47 +106,115 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Sesi Meja ${attached.tableName ?? ''} akan difinalisasi & digabung ke struk ini.',
+                            'Sesi meja & pesanan dibayar SEKALI dalam struk ini.',
                             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // ===== DETAIL SESI MEJA =====
+                if (attached != null && sessionBill != null) ...[
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(AppTheme.billiardIcon, color: AppTheme.billiardGreenDark, size: 20),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Sesi Meja ${attached.tableName ?? ''}',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                              Text(
+                                formatDurationHuman(attached.elapsedAt(
+                                    ref.watch(nowTickProvider).valueOrNull ?? DateTime.now())),
+                                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _BillRow(
+                            label: attached.packageName != null
+                                ? 'Paket ${attached.packageName}'
+                                : 'Sewa meja (${formatDurationHuman(attached.elapsedAt(ref.watch(nowTickProvider).valueOrNull ?? DateTime.now()))})',
+                            value: sessionBill.rentalFee,
+                            bold: true,
+                          ),
+                          for (final ap in attached.paketTambahan)
+                            _BillRow(label: 'Paket tambahan: ${ap.namaPaket}', value: ap.harga),
+                          if (sessionBill.extraChargesTotal > 0)
+                            _BillRow(
+                              label: 'Biaya tambahan (${attached.biayaTambahan.length} item)',
+                              value: sessionBill.extraChargesTotal,
+                            ),
+                          if (sessionBill.discountAmount > 0)
+                            _BillRow(
+                              label: 'Diskon sesi${sessionBill.discount?.reason != null ? ' (${sessionBill.discount!.reason})' : ''}',
+                              value: -sessionBill.discountAmount,
+                              color: AppTheme.tableFree,
+                            ),
+                          const Divider(height: 18),
+                          _BillRow(label: 'Subtotal meja', value: sessionBill.subtotal, bold: true, big: true),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-            if (widget.items.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    for (final item in widget.items)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${item.product.nama} × ${item.qty}',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                // ===== PESANAN MAKANAN & MINUMAN =====
+                if (widget.items.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.restaurant_menu_rounded, color: AppTheme.billiardGreenDark, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Pesanan Makanan & Minuman', style: Theme.of(context).textTheme.titleMedium),
+                              const Spacer(),
+                              Text(
+                                formatRupiah(subtotal),
+                                style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.billiardGreenDark),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          for (final item in widget.items)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '${item.product.nama} × ${item.qty}',
+                                      style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Text(
+                                    formatRupiah(item.subtotal),
+                                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              formatRupiah(item.subtotal),
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                            ),
-                          ],
-                        ),
+                          const Divider(height: 18),
+                          _BillRow(label: 'Subtotal pesanan', value: subtotal, bold: true, big: true),
+                        ],
                       ),
-                  ],
-                ),
-              ),
-            ],
+                    ),
+                  ),
+                ],
             const SizedBox(height: 12),
             Text('Metode Pembayaran', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
@@ -239,9 +309,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
               child: Column(
                 children: [
-                  _Row('Subtotal produk', totals.subtotal),
+                  if (sessionBill != null) _Row('Subtotal meja', sessionBill.subtotal),
+                  _Row('Subtotal pesanan', totals.subtotal),
                   if (totals.discountAmount > 0) _Row('Diskon', -totals.discountAmount, color: AppTheme.tableFree),
-                  if (attached != null) _Row('Sesi meja (final)', sessionFee),
                   if (totals.serviceChargeAmount > 0)
                     _Row('Service charge ${settings.serviceChargePersen.toStringAsFixed(0)}%', totals.serviceChargeAmount),
                   if (totals.taxAmount > 0)
@@ -292,21 +362,28 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  int _sessionFee(TableSession session, AppSettings settings) {
+  /// Breakdown detail biaya sesi meja (termasuk paket flat pertama &
+  /// paket tambahan) — tampil lengkap di summary checkout.
+  SessionBill? _sessionBill(TableSession session) {
     final now = ref.watch(nowTickProvider).valueOrNull ?? DateTime.now();
     final tables = ref.watch(tablesStreamProvider).valueOrNull ?? const <BillTable>[];
+    final packages = ref.watch(packagesStreamProvider).valueOrNull ?? const <PlayPackage>[];
     final table = tables.where((t) => t.id == session.tableId).firstOrNull;
-    if (table == null) return 0;
-    final bill = calculateSessionBill(
+    if (table == null) return null;
+    final firstPackage = session.packageId != null
+        ? packages.where((p) => p.id == session.packageId).firstOrNull
+        : null;
+    return calculateSessionBill(
       elapsed: session.elapsedAt(now),
       ratePerHour: table.tarifPerJam,
       mode: table.metodePembulatan,
       extraCharges: session.biayaTambahan,
       addedPackagesTotal: session.paketTambahanTotal,
       discount: session.diskon,
-      flatPackagePrice: null,
+      flatPackagePrice: firstPackage != null && firstPackage.tipe == PackageType.durasiFlat
+          ? firstPackage.harga
+          : null,
     );
-    return bill.subtotal;
   }
 
   Future<void> _submit(AppSettings settings, int grandTotal) async {
@@ -428,6 +505,52 @@ class _Row extends StatelessWidget {
           Text(
             '${value < 0 ? '-' : ''}${formatRupiah(value.abs())}',
             style: TextStyle(fontWeight: FontWeight.w700, color: color ?? AppTheme.ink),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BillRow extends StatelessWidget {
+  final String label;
+  final int value;
+  final bool bold;
+  final bool big;
+  final Color? color;
+
+  const _BillRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+    this.big = false,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: big ? 16 : 14,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                color: color,
+              ),
+            ),
+          ),
+          Text(
+            '${value < 0 ? '-' : ''}${formatRupiah(value.abs())}',
+            style: TextStyle(
+              fontSize: big ? 18 : 14,
+              fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
+              color: color ?? AppTheme.ink,
+            ),
           ),
         ],
       ),
