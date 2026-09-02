@@ -6,6 +6,9 @@ import '../../features/auth/domain/app_user.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../core/theme/app_theme.dart';
 
+/// Apakah sidebar desktop (>= 1200px) sedang diciutkan ke mode ikon.
+final sidebarCollapsedProvider = StateProvider<bool>((ref) => false);
+
 /// Shell responsif dengan 3 breakpoint:
 /// - < 900px  : bottom navigation (HP / tablet portrait)
 /// - 900-1199 : compact rail (tablet landscape / jendela sempit desktop)
@@ -34,6 +37,7 @@ class ResponsiveScaffold extends ConsumerWidget {
       _NavDest(
         route: '/',
         label: 'Meja & Sesi',
+        railLabel: 'Meja',
         icon: AppTheme.billiardIcon,
         selectedIcon: AppTheme.billiardIcon,
         section: 'MEJA & SESI',
@@ -42,6 +46,7 @@ class ResponsiveScaffold extends ConsumerWidget {
       _NavDest(
         route: '/pos',
         label: 'Kasir Walk-in',
+        railLabel: 'Kasir',
         icon: Icons.point_of_sale_rounded,
         selectedIcon: Icons.point_of_sale_rounded,
         section: 'KASIR',
@@ -49,6 +54,7 @@ class ResponsiveScaffold extends ConsumerWidget {
       _NavDest(
         route: '/reports',
         label: 'Laporan',
+        railLabel: 'Laporan',
         icon: Icons.bar_chart_rounded,
         selectedIcon: Icons.bar_chart_rounded,
         section: 'LAPORAN',
@@ -57,6 +63,7 @@ class ResponsiveScaffold extends ConsumerWidget {
         _NavDest(
           route: '/settings',
           label: 'Pengaturan',
+          railLabel: 'Atur',
           icon: Icons.settings_rounded,
           selectedIcon: Icons.settings_rounded,
           section: 'ADMIN',
@@ -72,10 +79,28 @@ class ResponsiveScaffold extends ConsumerWidget {
     }
 
     if (isSidebar) {
+      final collapsed = ref.watch(sidebarCollapsedProvider);
       return Scaffold(
         body: Row(
           children: [
-            _Sidebar(user: user, destinations: destinations, selectedIndex: selectedIndex()),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: collapsed
+                  ? _SidebarMini(
+                      key: const ValueKey('mini'),
+                      user: user,
+                      destinations: destinations,
+                      selectedIndex: selectedIndex(),
+                    )
+                  : _Sidebar(
+                      key: const ValueKey('full'),
+                      user: user,
+                      destinations: destinations,
+                      selectedIndex: selectedIndex(),
+                    ),
+            ),
             Expanded(
               child: SafeArea(
                 child: Container(
@@ -124,6 +149,7 @@ class ResponsiveScaffold extends ConsumerWidget {
 class _NavDest {
   final String route;
   final String label;
+  final String railLabel;
   final IconData icon;
   final IconData selectedIcon;
   final String? section;
@@ -131,6 +157,7 @@ class _NavDest {
   const _NavDest({
     required this.route,
     required this.label,
+    required this.railLabel,
     required this.icon,
     required this.selectedIcon,
     this.section,
@@ -140,15 +167,16 @@ class _NavDest {
 /// Logo + nama aplikasi (dipakai sidebar & rail).
 class _BrandMark extends StatelessWidget {
   final bool compact;
+  final bool dark;
 
-  const _BrandMark({this.compact = false});
+  const _BrandMark({this.compact = false, this.dark = false});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mark = Container(
-      width: compact ? 40 : 42,
-      height: compact ? 40 : 42,
+      width: compact ? 40 : 44,
+      height: compact ? 40 : 44,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -160,8 +188,8 @@ class _BrandMark extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: AppTheme.billiardGreen.withValues(alpha: 0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -171,15 +199,30 @@ class _BrandMark extends StatelessWidget {
     if (compact) return mark;
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         mark,
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Yes Billiard', style: theme.textTheme.titleMedium),
-            Text('POS System', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+            Text(
+              'Yes Billiard',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+                color: dark ? Colors.white : null,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'POS SYSTEM',
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.8,
+                color: dark ? AppTheme.billiardGreen : AppTheme.billiardGreenDark,
+              ),
+            ),
           ],
         ),
       ],
@@ -189,11 +232,13 @@ class _BrandMark extends StatelessWidget {
 
 class _LogoutButton extends ConsumerWidget {
   final bool showLabel;
+  final bool dark;
 
-  const _LogoutButton({this.showLabel = true});
+  const _LogoutButton({this.showLabel = true, this.dark = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final color = dark ? const Color(0xFFFCA5A5) : AppTheme.tableUsed;
     return Tooltip(
       message: 'Keluar',
       child: InkWell(
@@ -204,7 +249,7 @@ class _LogoutButton extends ConsumerWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.logout_rounded, size: 20, color: AppTheme.tableUsed),
+              Icon(Icons.logout_rounded, size: 20, color: color),
               if (showLabel) ...[
                 const SizedBox(width: 8),
                 Text(
@@ -212,11 +257,58 @@ class _LogoutButton extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.tableUsed,
+                    color: color,
                   ),
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Palet warna sidebar gelap (kontras dengan area konten yang terang).
+abstract final class _Sb {
+  static const bg = Color(0xFF0F172A);
+  static const text = Color(0xFFE2E8F0);
+  static const textDim = Color(0xFF94A3B8);
+  static const label = Color(0xFF64748B);
+}
+
+/// Tombol kecil untuk menciutkan / memperluas sidebar.
+class _SidebarToggle extends ConsumerWidget {
+  final bool collapsed;
+
+  const _SidebarToggle({required this.collapsed});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Tooltip(
+      message: collapsed ? 'Perluas menu' : 'Ciutkan menu',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () =>
+              ref.read(sidebarCollapsedProvider.notifier).state = !collapsed,
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Icon(
+              collapsed
+                  ? Icons.keyboard_double_arrow_right_rounded
+                  : Icons.keyboard_double_arrow_left_rounded,
+              size: 16,
+              color: _Sb.textDim,
+            ),
           ),
         ),
       ),
@@ -230,6 +322,7 @@ class _Sidebar extends ConsumerWidget {
   final int selectedIndex;
 
   const _Sidebar({
+    super.key,
     required this.user,
     required this.destinations,
     required this.selectedIndex,
@@ -237,101 +330,270 @@ class _Sidebar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final u = user; // lokal supaya type promotion bekerja di collection literal
     return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: SizedBox(
-        width: 256,
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            const _BrandMark(),
-            const SizedBox(height: 20),
-            const Divider(),
-            // Navigasi per grup (Meja terpisah dari Kasir)
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                children: [
-                  for (var i = 0; i < destinations.length; i++) ...[
-                    if (i == 0 || destinations[i].section != destinations[i - 1].section)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-                        child: Text(
-                          destinations[i].section ?? '',
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: _NavItem(
+      color: _Sb.bg,
+      child: SafeArea(
+        right: false,
+        child: SizedBox(
+          width: 264,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 14, 20),
+                child: Row(
+                  children: [
+                    const Expanded(child: _BrandMark(dark: true)),
+                    const _SidebarToggle(collapsed: false),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
+                  children: [
+                    for (var i = 0; i < destinations.length; i++) ...[
+                      if (i == 0 || destinations[i].section != destinations[i - 1].section)
+                        _SectionLabel(label: destinations[i].section ?? ''),
+                      _NavItem(
                         label: destinations[i].label,
                         icon: i == selectedIndex ? destinations[i].selectedIcon : destinations[i].icon,
                         selected: i == selectedIndex,
                         onTap: () => context.go(destinations[i].route),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Divider(),
-            if (u != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppTheme.billiardGreen.withValues(alpha: 0.15),
-                        child: Text(
-                          u.nama.isNotEmpty ? u.nama[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.billiardGreenDark,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              u.nama,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              u.role.label,
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
+                  ],
+                ),
+              ),
+              if (u != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 16),
+                  child: _UserCard(user: u),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sidebar diciutkan: hanya ikon + tooltip, menu tetap bisa diakses.
+class _SidebarMini extends ConsumerWidget {
+  final AppUser? user;
+  final List<_NavDest> destinations;
+  final int selectedIndex;
+
+  const _SidebarMini({
+    super.key,
+    required this.user,
+    required this.destinations,
+    required this.selectedIndex,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final u = user;
+    return Material(
+      color: _Sb.bg,
+      child: SafeArea(
+        right: false,
+        child: SizedBox(
+          width: 76,
+          child: Column(
+            children: [
+              const SizedBox(height: 18),
+              const _BrandMark(compact: true),
+              const SizedBox(height: 12),
+              const _SidebarToggle(collapsed: true),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  children: [
+                    for (var i = 0; i < destinations.length; i++)
+                      Center(
+                        child: _MiniNavItem(
+                          label: destinations[i].label,
+                          icon: i == selectedIndex
+                              ? destinations[i].selectedIcon
+                              : destinations[i].icon,
+                          selected: i == selectedIndex,
+                          onTap: () => context.go(destinations[i].route),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (u != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Tooltip(
+                    message: u.nama,
+                    child: Container(
+                      width: 38,
+                      height: 38,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        u.nama.isNotEmpty ? u.nama[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Tooltip(
+                  message: 'Keluar',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => ref.read(authRepositoryProvider).logout(),
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppTheme.tableUsed.withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.logout_rounded, size: 17, color: Color(0xFFFCA5A5)),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Align(alignment: Alignment.centerLeft, child: _LogoutButton()),
-            ),
-            const SizedBox(height: 8),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Label grup navigasi (MEJA & SESI, KASIR, LAPORAN, ADMIN).
+class _SectionLabel extends StatelessWidget {
+  final String label;
+
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 8),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
+          color: _Sb.label,
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu profil user di dasar sidebar: avatar gradient, nama, badge role,
+/// dan tombol keluar terintegrasi.
+class _UserCard extends ConsumerWidget {
+  final AppUser user;
+
+  const _UserCard({required this.user});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              user.nama.isNotEmpty ? user.nama[0].toUpperCase() : '?',
+              style: const TextStyle(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 16),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.nama,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: _Sb.text),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: user.isAdmin
+                        ? AppTheme.tableReserved.withValues(alpha: 0.22)
+                        : AppTheme.billiardGreen.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    user.role.label,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: user.isAdmin ? const Color(0xFFFCD34D) : const Color(0xFF6EE7B7),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Tooltip(
+            message: 'Keluar',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => ref.read(authRepositoryProvider).logout(),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.tableUsed.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.logout_rounded, size: 17, color: Color(0xFFFCA5A5)),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -352,52 +614,158 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppTheme.billiardGreen.withValues(alpha: 0.12)
-              : Colors.transparent,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 22,
-              color: selected ? AppTheme.billiardGreenDark : Colors.grey.shade500,
+          hoverColor: Colors.white.withValues(alpha: 0.06),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  fontSize: 13.5,
-                  color: selected ? AppTheme.billiardGreenDark : Colors.grey.shade700,
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: selected
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                          )
+                        : null,
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: selected
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.billiardGreen.withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 19,
+                    color: selected ? Colors.white : _Sb.textDim,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      fontSize: 13.5,
+                      color: selected ? _Sb.text : _Sb.textDim,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: selected ? 1 : 0,
+                  child: const _ActiveDot(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Item navigasi mode mini (ikon saja + tooltip).
+class _MiniNavItem extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MiniNavItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(13),
+            hoverColor: Colors.white.withValues(alpha: 0.06),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: selected
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                      )
+                    : null,
+                borderRadius: BorderRadius.circular(13),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: AppTheme.billiardGreen.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: selected ? Colors.white : _Sb.textDim,
               ),
             ),
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: selected ? 1 : 0,
-              child: Container(
-                width: 4,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: AppTheme.billiardGreen,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _ActiveDot extends StatelessWidget {
+  const _ActiveDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: const BoxDecoration(
+        color: AppTheme.billiardGreen,
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -418,54 +786,80 @@ class _NavRail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final u = user;
     return Material(
-      color: Theme.of(context).colorScheme.surface,
-      child: SafeArea(
-        child: SizedBox(
-          width: 88,
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              const _BrandMark(compact: true),
-              const SizedBox(height: 8),
-              Expanded(
-                child: NavigationRail(
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (i) => context.go(destinations[i].route),
-                  labelType: NavigationRailLabelType.all,
-                  leading: const SizedBox.shrink(),
-                  destinations: [
-                    for (final d in destinations)
-                      NavigationRailDestination(
-                        icon: Tooltip(message: d.label, child: Icon(d.icon)),
-                        selectedIcon: Tooltip(message: d.label, child: Icon(d.selectedIcon)),
-                        label: Text(d.label.split(' ').first),
-                      ),
-                  ],
+      color: _Sb.bg,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          navigationRailTheme: NavigationRailThemeData(
+            backgroundColor: _Sb.bg,
+            indicatorColor: AppTheme.billiardGreen.withValues(alpha: 0.18),
+            selectedIconTheme: const IconThemeData(color: Colors.white),
+            selectedLabelTextStyle:
+                const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
+            unselectedIconTheme: const IconThemeData(color: _Sb.textDim),
+            unselectedLabelTextStyle:
+                const TextStyle(color: _Sb.textDim, fontWeight: FontWeight.w600, fontSize: 11),
+            labelType: NavigationRailLabelType.all,
+          ),
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            width: 92,
+            child: Column(
+              children: [
+                const SizedBox(height: 18),
+                const _BrandMark(compact: true),
+                const SizedBox(height: 14),
+                Expanded(
+                  child: NavigationRail(
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (i) => context.go(destinations[i].route),
+                    labelType: NavigationRailLabelType.all,
+                    leading: const SizedBox.shrink(),
+                    groupAlignment: -0.9,
+                    destinations: [
+                      for (final d in destinations)
+                        NavigationRailDestination(
+                          icon: Tooltip(message: d.label, child: Icon(d.icon)),
+                          selectedIcon: Tooltip(message: d.label, child: Icon(d.selectedIcon)),
+                          label: Text(d.railLabel),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              if (u != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Tooltip(
-                    message: u.nama,
-                    child: CircleAvatar(
-                      radius: 17,
-                      backgroundColor: AppTheme.billiardGreen.withValues(alpha: 0.15),
-                      child: Text(
-                        u.nama.isNotEmpty ? u.nama[0].toUpperCase() : '?',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.billiardGreenDark,
+                if (u != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Tooltip(
+                      message: u.nama,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppTheme.billiardGreen, AppTheme.billiardGreenDark],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          u.nama.isNotEmpty ? u.nama[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            fontSize: 15,
+                          ),
                         ),
                       ),
                     ),
                   ),
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: _LogoutButton(showLabel: false, dark: true),
                 ),
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: _LogoutButton(showLabel: false),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

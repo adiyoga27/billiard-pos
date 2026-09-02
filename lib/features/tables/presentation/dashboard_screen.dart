@@ -350,7 +350,7 @@ class _TableCardState extends ConsumerState<_TableCard>
 
     final bill = running
         ? calculateSessionBill(
-            elapsed: session!.elapsedAt(now),
+            elapsed: session.elapsedAt(now),
             ratePerHour: table.tarifPerJam,
             mode: table.metodePembulatan,
             extraCharges: session.biayaTambahan,
@@ -359,12 +359,12 @@ class _TableCardState extends ConsumerState<_TableCard>
           )
         : null;
 
-    final elapsed = running ? session!.elapsedAt(now) : Duration.zero;
-    final showTimeoutPulse = running && session!.isOverdue;
+    final elapsed = running ? session.elapsedAt(now) : Duration.zero;
+    final showTimeoutPulse = running && session.isOverdue;
 
     double? progress;
     if (running &&
-        session!.mode == SessionMode.durasiTetap &&
+        session.mode == SessionMode.durasiTetap &&
         session.waktuSelesaiTarget != null) {
       final remaining = session.remainingUntilTarget(now);
       final total = elapsed + (remaining.isNegative ? Duration.zero : remaining);
@@ -381,7 +381,6 @@ class _TableCardState extends ConsumerState<_TableCard>
         animation: _pulseController,
         builder: (context, child) {
           final pulse = showTimeoutPulse ? _pulseController.value : 0.0;
-          final borderAlpha = showTimeoutPulse ? 0.55 + (pulse * 0.45) : 0.5;
           final glowBlur = showTimeoutPulse ? 16 + (pulse * 10) : 14.0;
 
           return AnimatedScale(
@@ -522,7 +521,7 @@ class _TableCardState extends ConsumerState<_TableCard>
                                       ),
                                     ],
                                   ),
-                                  if (session!.mode == SessionMode.durasiTetap &&
+                                  if (session.mode == SessionMode.durasiTetap &&
                                       session.waktuSelesaiTarget != null) ...[
                                     const SizedBox(height: 4),
                                     Text(
@@ -639,11 +638,12 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = emphasize ? Color.lerp(color, color, 1.0)! : color.withValues(alpha: 0.14);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: emphasize ? color.withValues(alpha: 0.85 + (pulseValue * 0.15)) : bg,
+        color: emphasize
+            ? color.withValues(alpha: 0.85 + (pulseValue * 0.15))
+            : color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
