@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart' as fs;
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 
 import '../../../core/domain/billing_calculator.dart';
@@ -112,57 +111,79 @@ class PosRepository {
     late Transaction txDoc;
 
     await _db.runTransaction((tx) async {
-      // 1) Nomor invoice: INV-{tanggal Ymd}-{urutan transaksi hari itu}
       final now = DateTime.now();
       final dateKey = '${now.year}'
           '${now.month.toString().padLeft(2, '0')}'
           '${now.day.toString().padLeft(2, '0')}';
       final counterRef = _db.collection('counters').doc(dateKey);
+
+      // ===== FASE READ (semua read wajib sebelum write dalam transaksi) =====
       final counterSnap = await tx.get(counterRef);
+
+      DocumentSnapshot<Map<String, dynamic>>? sessionSnap;
+      DocumentSnapshot<Map<String, dynamic>>? tableSnap;
+      DocumentSnapshot<Map<String, dynamic>>? flatPkgSnap;
+      if (sessionToFinalize != null) {
+        final sessionRef = _db.collection('table_sessions').doc(sessionToFinalize.id);
+        sessionSnap = await tx.get(sessionRef);
+        if (sessionSnap.exists) {
+          final session = TableSession.fromFirestore(sessionToFinalize.id, sessionSnap.data()!);
+          tableSnap = await tx.get(_db.collection('tables').doc(session.tableId));
+          if (session.packageId != null) {
+            flatPkgSnap = await tx.get(_db.collection('packages').doc(session.packageId!));
+          }
+        }
+      }
+
+      final productSnaps = <String, DocumentSnapshot<Map<String, dynamic>>>{};
+      for (final item in items) {
+        productSnaps[item.productId] =
+            await tx.get(_db.collection('products').doc(item.productId));
+      }
+
+      // ===== FASE WRITE =====
       final lastNumber = (counterSnap.data()?['last_invoice'] as num?)?.toInt() ?? 0;
       final newNumber = lastNumber + 1;
       tx.set(counterRef, {'last_invoice': newNumber}, SetOptions(merge: true));
-
       final nomor = 'INV-$dateKey${newNumber.toString().padLeft(3, '0')}';
 
-      // 2) Biaya sesi meja (bila menyertakan sesi): baca sesi + meja di dalam tx
       int sessionBillAmount = 0;
-      if (sessionToFinalize != null) {
+      if (sessionToFinalize != null && sessionSnap != null && sessionSnap.exists) {
         final sessionRef = _db.collection('table_sessions').doc(sessionToFinalize.id);
-        final sessionSnap = await tx.get(sessionRef);
-        if (sessionSnap.exists) {
-          final session = TableSession.fromFirestore(sessionToFinalize.id, sessionSnap.data()!);
-          final elapsed = session.elapsedAt(now);
-          final tableRef = _db.collection('tables').doc(session.tableId);
-          final tableSnap = await tx.get(tableRef);
-          final table = tableSnap.exists
-              ? BillTable.fromFirestore(session.tableId, tableSnap.data()!)
-              : null;
-          final flatPrice = await _flatPackagePrice(tx, session);
-          final bill = calculateSessionBill(
-            elapsed: elapsed,
-            ratePerHour: table?.tarifPerJam ?? 0,
-            mode: table?.metodePembulatan ?? RoundingMode.perMinute,
-            extraCharges: session.biayaTambahan,
-            addedPackagesTotal: session.paketTambahanTotal,
-            discount: session.diskon,
-            flatPackagePrice: flatPrice,
-          );
-          sessionBillAmount = bill.subtotal;
-          tx.update(sessionRef, {
-            'status': 'selesai',
-            'waktu_selesai': Timestamp.fromDate(now),
-            'durasi_menit': elapsed.inMinutes,
-            'biaya': bill.subtotal,
-            'invoice_id': invoiceRef.id,
+        final session = TableSession.fromFirestore(sessionToFinalize.id, sessionSnap.data()!);
+        final elapsed = session.elapsedAt(now);
+        final table = (tableSnap != null && tableSnap.exists)
+            ? BillTable.fromFirestore(session.tableId, tableSnap.data()!)
+            : null;
+        final flatPrice = flatPkgSnap != null && flatPkgSnap.exists
+            ? (flatPkgSnap.data()!['tipe'] == 'durasi_flat'
+                ? (flatPkgSnap.data()!['harga'] as num?)?.toInt()
+                : null)
+            : null;
+        final bill = calculateSessionBill(
+          elapsed: elapsed,
+          ratePerHour: table?.tarifPerJam ?? 0,
+          mode: table?.metodePembulatan ?? RoundingMode.perMinute,
+          extraCharges: session.biayaTambahan,
+          addedPackagesTotal: session.paketTambahanTotal,
+          discount: session.diskon,
+          flatPackagePrice: flatPrice,
+        );
+        sessionBillAmount = bill.subtotal;
+        tx.update(sessionRef, {
+          'status': 'selesai',
+          'waktu_selesai': Timestamp.fromDate(now),
+          'durasi_menit': elapsed.inMinutes,
+          'biaya': bill.subtotal,
+          'invoice_id': invoiceRef.id,
+        });
+        if (tableSnap != null &&
+            tableSnap.exists &&
+            (tableSnap.data()?['current_session_id'] as String?) == session.id) {
+          tx.update(_db.collection('tables').doc(session.tableId), {
+            'status': 'kosong',
+            'current_session_id': FieldValue.delete(),
           });
-          if (tableSnap.exists &&
-              (tableSnap.data()?['current_session_id'] as String?) == session.id) {
-            tx.update(tableRef, {
-              'status': 'kosong',
-              'current_session_id': FieldValue.delete(),
-            });
-          }
         }
       }
 
@@ -189,26 +210,17 @@ class PosRepository {
       );
       tx.set(invoiceRef, txDoc.toMap());
 
-      // 3) Kurangi stok produk
       for (final item in items) {
-        final pRef = _db.collection('products').doc(item.productId);
-        final pSnap = await tx.get(pRef);
-        if (pSnap.exists) {
+        final pSnap = productSnaps[item.productId];
+        if (pSnap != null && pSnap.exists) {
           final stok = (pSnap.data()?['stok'] as num?)?.toInt() ?? 0;
-          tx.update(pRef, {'stok': (stok - item.qty).clamp(0, 999999)});
+          tx.update(_db.collection('products').doc(item.productId), {
+            'stok': (stok - item.qty).clamp(0, 999999),
+          });
         }
       }
     });
 
     return txDoc;
-  }
-
-  Future<int?> _flatPackagePrice(fs.Transaction tx, TableSession session) async {
-    if (session.packageId == null) return null;
-    final snap = await tx.get(_db.collection('packages').doc(session.packageId!));
-    if (!snap.exists) return null;
-    final p = snap.data()!;
-    if (p['tipe'] == 'durasi_flat') return (p['harga'] as num?)?.toInt();
-    return null;
   }
 }
