@@ -49,8 +49,7 @@ dependencies:
   esc_pos_utils: ^1.1.0
   shared_preferences: ^2.5.5
   google_fonts: ^6.2.1
-  bluetooth_thermal_printer: ^0.0.6
-
+  print_bluetooth_thermal: ^1.1.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/domain/billing_calculator.dart';
 import '../../../core/theme/app_theme.dart';
@@ -11,7 +12,7 @@ import '../../tables/domain/table_models.dart';
 import '../../tables/providers/tables_providers.dart';
 import '../domain/product_models.dart';
 import '../providers/pos_providers.dart';
-import 'receipt_dialog.dart';
+import 'print_receipt_dialog.dart';
 
 /// Halaman checkout: diskon, metode bayar, uang diterima, konfirmasi transaksi.
 /// [items] = item yang dibayar (dari cart walk-in ATAU pesanan meja).
@@ -483,11 +484,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
       if (!mounted) return;
       setState(() => _saving = false);
-      // Tampilkan struk dulu (dialog hasil, bukan form), lalu tutup halaman.
+      // Tampilkan dialog hasil dengan pilihan cetak Bluetooth thermal
+      // (bukan preview struk langsung), lalu tutup halaman.
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => ReceiptDialog(transaction: tx, settings: settings),
+        builder: (_) => PrintReceiptDialog(
+          transaction: tx,
+          settings: settings,
+          closeLabel: 'Transaksi Baru',
+          onClose: () {
+            if (mounted) context.go('/pos');
+          },
+        ),
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

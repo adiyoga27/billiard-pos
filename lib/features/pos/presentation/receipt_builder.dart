@@ -5,8 +5,16 @@ import '../../settings/domain/settings_models.dart';
 import '../domain/product_models.dart';
 
 /// Membangun struk thermal (ESC/POS) + teks preview dari sebuah transaksi.
+///
+/// Lebar kertas mengikuti `AppSettings.kertasMm` (58 atau 80 mm).
+/// Header & footer struk diambil dari pengaturan admin (tersimpan di Firebase).
 class ReceiptBuilder {
   const ReceiptBuilder();
+
+  static const _defaultFooter = 'Terima kasih, selamat bermain!';
+
+  /// Lebar karakter per baris sesuai kertas.
+  static int charWidth(int kertasMm) => kertasMm == 80 ? 48 : 32;
 
   String buildText({
     required Transaction transaction,
@@ -14,7 +22,7 @@ class ReceiptBuilder {
     int? sessionFee,
   }) {
     final b = StringBuffer();
-    final w = 32;
+    final w = charWidth(settings.kertasMm);
     String center(String s) => s.padLeft((w + s.length) ~/ 2).padRight(w);
     String line(String label, String value) =>
         '${label.padRight(w - value.length)}$value';
@@ -22,6 +30,12 @@ class ReceiptBuilder {
     b.writeln(center(settings.namaToko.isEmpty ? 'YES BILLIARD' : settings.namaToko.toUpperCase()));
     if (settings.alamat.isNotEmpty) b.writeln(center(settings.alamat));
     if (settings.noTelp.isNotEmpty) b.writeln(center('Telp: ${settings.noTelp}'));
+    if (settings.strukHeader.trim().isNotEmpty) {
+      b.writeln('-' * w);
+      for (final l in settings.strukHeader.trim().split('\n')) {
+        b.writeln(center(l.trim()));
+      }
+    }
     b.writeln('=' * w);
     b.writeln(line('No', transaction.nomor));
     b.writeln(line('Tanggal', formatDateTime(transaction.createdAt)));
@@ -35,7 +49,7 @@ class ReceiptBuilder {
     b.writeln('=' * w);
     for (final item in transaction.items) {
       b.writeln(item.nama);
-      b.writeln('${item.qty} x ${formatRupiah(item.hargaSatuan)}'.padRight(w - item.subtotal.toString().length) +
+      b.writeln('${item.qty} x ${formatRupiah(item.hargaSatuan)}'.padRight(w - formatRupiah(item.subtotal).length) +
           formatRupiah(item.subtotal));
     }
     if (transaction.sessionFinalized && sessionFee != null && sessionFee > 0) {
@@ -63,20 +77,26 @@ class ReceiptBuilder {
     }
     b.writeln('=' * w);
     b.writeln(center('TERIMA KASIH'));
-    b.writeln(center('Selamat bermain!'));
+    final footer = settings.strukFooter.trim().isEmpty
+        ? _defaultFooter
+        : settings.strukFooter.trim();
+    for (final l in footer.split('\n')) {
+      b.writeln(center(l.trim()));
+    }
     b.writeln();
     b.writeln();
     return b.toString();
   }
 
-  /// Bytes ESC/POS untuk thermal printer 80mm.
+  /// Bytes ESC/POS untuk thermal printer (58mm / 80mm sesuai settings).
   Future<List<int>> buildEscBytes({
     required Transaction transaction,
     required AppSettings settings,
     int? sessionFee,
   }) async {
     final profile = await CapabilityProfile.load();
-    final generator = Generator(PaperSize.mm80, profile);
+    final paper = settings.kertasMm == 80 ? PaperSize.mm80 : PaperSize.mm58;
+    final generator = Generator(paper, profile);
     var bytes = <int>[];
 
     bytes += generator.text(
@@ -88,6 +108,12 @@ class ReceiptBuilder {
     }
     if (settings.noTelp.isNotEmpty) {
       bytes += generator.text('Telp: ${settings.noTelp}', styles: const PosStyles(align: PosAlign.center));
+    }
+    if (settings.strukHeader.trim().isNotEmpty) {
+      bytes += generator.hr();
+      for (final l in settings.strukHeader.trim().split('\n')) {
+        bytes += generator.text(l.trim(), styles: const PosStyles(align: PosAlign.center));
+      }
     }
     bytes += generator.hr();
     bytes += generator.text('No: ${transaction.nomor}');
@@ -168,7 +194,12 @@ class ReceiptBuilder {
     }
     bytes += generator.hr();
     bytes += generator.text('TERIMA KASIH', styles: const PosStyles(align: PosAlign.center, bold: true));
-    bytes += generator.text('Selamat bermain!', styles: const PosStyles(align: PosAlign.center));
+    final footer = settings.strukFooter.trim().isEmpty
+        ? _defaultFooter
+        : settings.strukFooter.trim();
+    for (final l in footer.split('\n')) {
+      bytes += generator.text(l.trim(), styles: const PosStyles(align: PosAlign.center));
+    }
     bytes += generator.feed(2);
     bytes += generator.cut();
     return bytes;

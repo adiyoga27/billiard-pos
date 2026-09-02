@@ -6,8 +6,8 @@ import '../../../core/utils/formatters.dart';
 import '../../settings/domain/settings_models.dart';
 import '../../settings/providers/settings_providers.dart';
 import '../domain/product_models.dart';
-import '../presentation/receipt_builder.dart';
 import '../providers/pos_providers.dart';
+import 'print_receipt_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 /// Detail transaksi — halaman target deep-link `/transaction/:invoiceId`
@@ -182,9 +182,9 @@ class TransactionDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 14),
                     OutlinedButton.icon(
-                      onPressed: () => _showReceipt(context, tx, settings),
+                      onPressed: () => _showPrint(context, tx, settings),
                       icon: const Icon(Icons.print_rounded),
-                      label: const Text('Lihat Struk'),
+                      label: const Text('Cetak Struk'),
                     ),
                   ],
                 ),
@@ -196,32 +196,14 @@ class TransactionDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showReceipt(BuildContext context, Transaction tx, AppSettings settings) {
-    final text = const ReceiptBuilder().buildText(transaction: tx, settings: settings);
+  void _showPrint(BuildContext context, Transaction tx, AppSettings settings) {
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Struk'),
-        content: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Text(
-              text,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 11.5, height: 1.35),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Tutup'),
-          ),
-        ],
+      builder: (_) => PrintReceiptDialog(
+        transaction: tx,
+        settings: settings,
+        title: 'Cetak Struk',
+        closeLabel: 'Tutup',
       ),
     );
   }

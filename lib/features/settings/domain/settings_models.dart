@@ -11,6 +11,11 @@ class AppSettings {
   final double serviceChargePersen;
   final double diskonMemberPersen; // diskon otomatis saat nama member diisi
 
+  // ===== Printer thermal & struk =====
+  final int kertasMm; // lebar kertas thermal: 58 atau 80 mm
+  final String strukHeader; // teks header struk (diatur admin, tersimpan di Firebase)
+  final String strukFooter; // teks footer struk
+
   const AppSettings({
     this.namaToko = 'Yes Billiard',
     this.alamat = '',
@@ -20,6 +25,9 @@ class AppSettings {
     this.pajakPersen = 0,
     this.serviceChargePersen = 0,
     this.diskonMemberPersen = 5,
+    this.kertasMm = 58,
+    this.strukHeader = '',
+    this.strukFooter = '',
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
@@ -31,6 +39,9 @@ class AppSettings {
         pajakPersen: (map['pajak_persen'] as num?)?.toDouble() ?? 0,
         serviceChargePersen: (map['service_charge_persen'] as num?)?.toDouble() ?? 0,
         diskonMemberPersen: (map['diskon_member_persen'] as num?)?.toDouble() ?? 5,
+        kertasMm: (int.tryParse('${map['kertas_mm']}') ?? 58) == 80 ? 80 : 58,
+        strukHeader: map['struk_header'] as String? ?? '',
+        strukFooter: map['struk_footer'] as String? ?? '',
       );
 
   Map<String, dynamic> toMap() => {
@@ -42,5 +53,8 @@ class AppSettings {
         'pajak_persen': pajakPersen,
         'service_charge_persen': serviceChargePersen,
         'diskon_member_persen': diskonMemberPersen,
+        'kertas_mm': kertasMm,
+        'struk_header': strukHeader,
+        'struk_footer': strukFooter,
       };
 }

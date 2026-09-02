@@ -34,7 +34,12 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
       TextEditingController(text: widget.settings.serviceChargePersen.toStringAsFixed(0));
   late final TextEditingController _memberCtrl =
       TextEditingController(text: widget.settings.diskonMemberPersen.toStringAsFixed(0));
+  late final TextEditingController _headerCtrl =
+      TextEditingController(text: widget.settings.strukHeader);
+  late final TextEditingController _footerCtrl =
+      TextEditingController(text: widget.settings.strukFooter);
   late RoundingMode _pembulatan = widget.settings.pembulatan;
+  late int _kertas = widget.settings.kertasMm;
   bool _saving = false;
   String? _error;
 
@@ -47,6 +52,8 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
     _pajakCtrl.dispose();
     _scCtrl.dispose();
     _memberCtrl.dispose();
+    _headerCtrl.dispose();
+    _footerCtrl.dispose();
     super.dispose();
   }
 
@@ -66,6 +73,9 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
         serviceChargePersen: double.tryParse(_scCtrl.text) ?? widget.settings.serviceChargePersen,
         diskonMemberPersen:
             double.tryParse(_memberCtrl.text) ?? widget.settings.diskonMemberPersen,
+        kertasMm: _kertas,
+        strukHeader: _headerCtrl.text.trim(),
+        strukFooter: _footerCtrl.text.trim(),
       );
       await ref.read(settingsRepositoryProvider).updateSettings(updated);
       if (mounted) context.pop();
@@ -168,6 +178,59 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
               labelText: 'Diskon member (%)',
               hintText: 'Otomatis berlaku saat nama member diisi di checkout',
               prefixIcon: Icon(Icons.badge_outlined),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Printer & Struk',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Pengaturan ini tersimpan di cloud — berlaku otomatis di semua perangkat kasir.',
+            style: TextStyle(
+                fontSize: 12.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment(
+                value: 58,
+                icon: Icon(Icons.receipt_long_rounded, size: 18),
+                label: Text('58 mm'),
+              ),
+              ButtonSegment(
+                value: 80,
+                icon: Icon(Icons.receipt_long_rounded, size: 18),
+                label: Text('80 mm'),
+              ),
+            ],
+            selected: {_kertas},
+            onSelectionChanged: (s) => setState(() => _kertas = s.first),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _headerCtrl,
+            maxLines: 2,
+            decoration: const InputDecoration(
+              labelText: 'Header struk (opsional)',
+              hintText: 'Teks tambahan di atas struk — contoh: promo, jam operasional',
+              alignLabelWithHint: true,
+              prefixIcon: Icon(Icons.vertical_align_top_rounded),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _footerCtrl,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Footer struk (opsional)',
+              hintText: 'Teks di bawah struk — contoh: terima kasih, media sosial',
+              alignLabelWithHint: true,
+              prefixIcon: Icon(Icons.vertical_align_bottom_rounded),
             ),
           ),
           if (_error != null)
