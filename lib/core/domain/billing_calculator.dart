@@ -190,7 +190,8 @@ SessionBill calculateSessionBill({
 class TransactionTotals {
   final int subtotal;
   final int discountAmount;
-  final int taxableBase; // subtotal - diskon
+  final int memberDiscountAmount; // diskon otomatis saat nama member diisi
+  final int taxableBase; // subtotal - diskon - diskon member
   final int taxAmount;
   final int serviceChargeAmount;
   final int total;
@@ -198,6 +199,7 @@ class TransactionTotals {
   const TransactionTotals({
     required this.subtotal,
     required this.discountAmount,
+    required this.memberDiscountAmount,
     required this.taxableBase,
     required this.taxAmount,
     required this.serviceChargeAmount,
@@ -208,19 +210,25 @@ class TransactionTotals {
 TransactionTotals calculateTransactionTotals({
   required int subtotal,
   Discount? discount,
+  double memberDiscountPercent = 0,
   required double taxPercent,
   required double serviceChargePercent,
 }) {
   final disc = discountAmount(subtotal, discount);
   final base = subtotal - disc;
-  final serviceCharge = (base * serviceChargePercent / 100).round();
-  final tax = (base * taxPercent / 100).round();
+  final memberDisc = memberDiscountPercent > 0
+      ? (base * memberDiscountPercent / 100).round().clamp(0, base)
+      : 0;
+  final afterMember = base - memberDisc;
+  final serviceCharge = (afterMember * serviceChargePercent / 100).round();
+  final tax = (afterMember * taxPercent / 100).round();
   return TransactionTotals(
     subtotal: subtotal,
     discountAmount: disc,
-    taxableBase: base,
+    memberDiscountAmount: memberDisc,
+    taxableBase: afterMember,
     serviceChargeAmount: serviceCharge,
     taxAmount: tax,
-    total: base + tax + serviceCharge,
+    total: afterMember + tax + serviceCharge,
   );
 }

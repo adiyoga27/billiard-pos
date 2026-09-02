@@ -87,6 +87,14 @@ class TransactionDetailScreen extends ConsumerWidget {
                               'Kasir: ${tx.kasirNama ?? '-'}${tx.tableName != null ? ' • Meja ${tx.tableName}' : ''}',
                               style: TextStyle(color: Colors.grey.shade600),
                             ),
+                            if (tx.namaMember != null)
+                              Text(
+                                'Member: ${tx.namaMember}',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -145,6 +153,8 @@ class TransactionDetailScreen extends ConsumerWidget {
                           children: [
                             _Row('Subtotal', formatRupiah(tx.subtotal)),
                             if (tx.diskon > 0) _Row('Diskon', '-${formatRupiah(tx.diskon)}', color: AppTheme.tableFree),
+                            if (tx.diskonMember > 0)
+                              _Row('Diskon member', '-${formatRupiah(tx.diskonMember)}', color: AppTheme.tableFree),
                             if (tx.serviceCharge > 0) _Row('Service charge', formatRupiah(tx.serviceCharge)),
                             if (tx.pajak > 0) _Row('Pajak', formatRupiah(tx.pajak)),
                             const Divider(height: 18),

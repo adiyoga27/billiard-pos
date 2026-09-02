@@ -178,37 +178,38 @@ class _ProductCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  height: 64,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.billiardGreen.withValues(alpha: 0.14),
-                        AppTheme.billiardGreen.withValues(alpha: 0.05),
-                      ],
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.billiardGreen.withValues(alpha: 0.14),
+                          AppTheme.billiardGreen.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    product.stok > 20 ? Icons.local_drink_rounded : Icons.fastfood_rounded,
-                    color: AppTheme.billiardGreenDark,
-                    size: 30,
+                    child: Icon(
+                      product.stok > 20 ? Icons.local_drink_rounded : Icons.fastfood_rounded,
+                      color: AppTheme.billiardGreenDark,
+                      size: 30,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 Text(
                   product.nama,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, height: 1.2),
                 ),
-                const Spacer(),
+                const SizedBox(height: 4),
                 Text(
                   formatRupiah(product.harga),
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppTheme.billiardGreenDark),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

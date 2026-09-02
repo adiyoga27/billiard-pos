@@ -178,6 +178,11 @@ class TablesRepository {
   /// Tambah PAKET saat sesi sedang berjalan: durasi bertambah sesuai paket
   /// (misal beli "Paket 3 Jam" di tengah sesi → waktu_selesai_target + 3 jam)
   /// dan harga paket dicatat di `paket_tambahan` (masuk ke breakdown biaya).
+  ///
+  /// [TableSession] mencatat tiap pembelian sebagai entri terpisah supaya
+  /// bisa dibatalkan satu per satu.
+  static int _packageSeq = 0;
+
   Future<void> addPackageToSession({
     required String sessionId,
     required PlayPackage paket,
@@ -189,8 +194,10 @@ class TablesRepository {
       final s = TableSession.fromFirestore(sessionId, snap.data()!);
       if (!s.isRunning) return;
 
+      // id unik per pembelian: microsecond + urutan + id paket, supaya dua
+      // pembelian yang hampir bersamaan tidak menghasilkan id yang sama.
       final added = AddedPackage(
-        id: '${DateTime.now().microsecondsSinceEpoch}-${paket.id}',
+        id: '${DateTime.now().microsecondsSinceEpoch}-${_packageSeq++}-${paket.id}',
         packageId: paket.id,
         namaPaket: paket.namaPaket,
         harga: paket.harga,
@@ -219,8 +226,8 @@ class TablesRepository {
   }
 
   /// Batalkan paket tambahan yang dibeli di tengah sesi:
-  /// hapus dari tagihan, kembalikan durasi yang ditambahkan (bila durasi flat),
-  /// dan hapus satu entri dari riwayat perpanjangan.
+  /// hapus SATU entri dari tagihan, kembalikan durasi yang ditambahkan
+  /// (bila durasi flat), dan hapus satu entri dari riwayat perpanjangan.
   Future<void> removePackageFromSession({
     required String sessionId,
     required String addedPackageId,
@@ -231,12 +238,15 @@ class TablesRepository {
       if (!snap.exists) return;
       final s = TableSession.fromFirestore(sessionId, snap.data()!);
       if (!s.isRunning) return;
-      final target = s.paketTambahan.where((p) => p.id == addedPackageId).firstOrNull;
-      if (target == null) return;
+      final idx = s.paketTambahan.indexWhere((p) => p.id == addedPackageId);
+      if (idx < 0) return;
+      final target = s.paketTambahan[idx];
 
       final updates = <String, dynamic>{
-        'paket_tambahan':
-            s.paketTambahan.where((p) => p.id != addedPackageId).map((p) => p.toMap()).toList(),
+        'paket_tambahan': [
+          for (var i = 0; i < s.paketTambahan.length; i++)
+            if (i != idx) s.paketTambahan[i].toMap(),
+        ],
       };
 
       // Kembalikan durasi yang ditambahkan paket durasi flat ke target selesai.

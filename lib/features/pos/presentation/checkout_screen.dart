@@ -38,9 +38,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   PaymentMethod _method = PaymentMethod.tunai;
   bool _useDiscount = false;
   bool _discountIsPercent = true;
+  bool _useMemberDiscount = true;
   final _discountCtrl = TextEditingController();
   final _discountReasonCtrl = TextEditingController();
   final _cashCtrl = TextEditingController();
+  final _memberCtrl = TextEditingController();
   bool _saving = false;
   String? _error;
 
@@ -49,6 +51,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _discountCtrl.dispose();
     _discountReasonCtrl.dispose();
     _cashCtrl.dispose();
+    _memberCtrl.dispose();
     super.dispose();
   }
 
@@ -70,10 +73,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final sessionBill = attached != null ? _sessionBill(attached) : null;
     final sessionFee = sessionBill?.subtotal ?? 0;
     final discount = _discount;
+    final memberName = _memberCtrl.text.trim();
+    final memberPct =
+        memberName.isNotEmpty && _useMemberDiscount ? settings.diskonMemberPersen : 0.0;
     final subtotal = widget.items.fold<int>(0, (acc, i) => acc + i.subtotal);
     final totals = calculateTransactionTotals(
       subtotal: subtotal,
       discount: discount,
+      memberDiscountPercent: memberPct,
       taxPercent: settings.pajakPersen,
       serviceChargePercent: settings.serviceChargePersen,
     );
@@ -238,6 +245,30 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ],
             ),
             const SizedBox(height: 14),
+            Text('Member', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _memberCtrl,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Nama member (opsional)',
+                hintText: 'Kosongkan untuk transaksi non-member',
+                prefixIcon: Icon(Icons.badge_outlined),
+              ),
+            ),
+            if (memberName.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  'Pakai diskon member (${settings.diskonMemberPersen.toStringAsFixed(0)}%)',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                value: _useMemberDiscount,
+                onChanged: (v) => setState(() => _useMemberDiscount = v),
+              ),
+            ],
+            const SizedBox(height: 14),
             Text('Diskon', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             SwitchListTile(
@@ -320,6 +351,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   if (sessionBill != null) _Row('Subtotal meja', sessionBill.subtotal),
                   _Row('Subtotal pesanan', totals.subtotal),
                   if (totals.discountAmount > 0) _Row('Diskon', -totals.discountAmount, color: AppTheme.tableFree),
+                  if (totals.memberDiscountAmount > 0)
+                    _Row(
+                      'Diskon member ${memberPct.toStringAsFixed(0)}%${memberName.isNotEmpty ? ' ($memberName)' : ''}',
+                      -totals.memberDiscountAmount,
+                      color: AppTheme.tableFree,
+                    ),
                   if (totals.serviceChargeAmount > 0)
                     _Row('Service charge ${settings.serviceChargePersen.toStringAsFixed(0)}%', totals.serviceChargeAmount),
                   if (totals.taxAmount > 0)
@@ -404,6 +441,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       return;
     }
 
+    final memberName = _memberCtrl.text.trim();
+    final memberPct =
+        memberName.isNotEmpty && _useMemberDiscount ? settings.diskonMemberPersen : 0.0;
+
     setState(() {
       _saving = true;
       _error = null;
@@ -423,6 +464,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         kasir: user,
         items: items,
         discount: _discount,
+        namaMember: memberName.isEmpty ? null : memberName,
+        memberDiscountPercent: memberPct,
         settings: settings,
         metodeBayar: _method,
         uangDiterima: _method == PaymentMethod.tunai && cashEntered > 0 ? cashEntered : null,

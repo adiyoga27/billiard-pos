@@ -571,6 +571,36 @@ void main() {
       expect(tx.pajak, 9900);
       expect(tx.total, 104400);
     });
+
+    test('transaksi member: nama + diskon member tersimpan', () async {
+      await seed();
+      final p1 = Product.fromFirestore(
+          'p1', (await db.collection('products').doc('p1').get()).data()!);
+      const settings = AppSettings(diskonMemberPersen: 10);
+
+      final tx = await posRepo.createTransaction(
+        kasir: kasir,
+        items: [
+          TransactionItem(
+              productId: p1.id, nama: p1.nama, qty: 2, hargaSatuan: p1.harga),
+        ],
+        namaMember: 'Agus Setiawan',
+        memberDiscountPercent: 10,
+        settings: settings,
+        metodeBayar: PaymentMethod.tunai,
+        uangDiterima: 50000,
+      );
+
+      // subtotal 50000, diskon member 10% = 5000 → total 45000
+      expect(tx.namaMember, 'Agus Setiawan');
+      expect(tx.diskonMember, 5000);
+      expect(tx.total, 45000);
+      expect(tx.kembalian, 5000);
+
+      final snap = await db.collection('transactions').doc(tx.id).get();
+      expect(snap.data()!['nama_member'], 'Agus Setiawan');
+      expect(snap.data()!['diskon_member'], 5000);
+    });
   });
 
   group('Checkout gabungan sesi meja + pesanan (alur utama bug report)', () {

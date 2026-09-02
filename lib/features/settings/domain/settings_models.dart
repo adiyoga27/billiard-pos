@@ -9,6 +9,7 @@ class AppSettings {
   final int ambangPeringatanMenit; // default 10 menit sebelum habis
   final double pajakPersen;
   final double serviceChargePersen;
+  final double diskonMemberPersen; // diskon otomatis saat nama member diisi
 
   const AppSettings({
     this.namaToko = 'Yes Billiard',
@@ -18,6 +19,7 @@ class AppSettings {
     this.ambangPeringatanMenit = 10,
     this.pajakPersen = 0,
     this.serviceChargePersen = 0,
+    this.diskonMemberPersen = 5,
   });
 
   factory AppSettings.fromMap(Map<String, dynamic> map) => AppSettings(
@@ -28,6 +30,7 @@ class AppSettings {
         ambangPeringatanMenit: (map['ambang_peringatan_menit'] as num?)?.toInt() ?? 10,
         pajakPersen: (map['pajak_persen'] as num?)?.toDouble() ?? 0,
         serviceChargePersen: (map['service_charge_persen'] as num?)?.toDouble() ?? 0,
+        diskonMemberPersen: (map['diskon_member_persen'] as num?)?.toDouble() ?? 5,
       );
 
   Map<String, dynamic> toMap() => {
@@ -38,5 +41,6 @@ class AppSettings {
         'ambang_peringatan_menit': ambangPeringatanMenit,
         'pajak_persen': pajakPersen,
         'service_charge_persen': serviceChargePersen,
+        'diskon_member_persen': diskonMemberPersen,
       };
 }

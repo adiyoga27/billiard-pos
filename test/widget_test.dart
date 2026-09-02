@@ -165,5 +165,44 @@ void main() {
       );
       expect(t.total, 50000);
     });
+
+    test('diskon member % berlaku setelah diskon biasa', () {
+      final t = calculateTransactionTotals(
+        subtotal: 100000,
+        discount: const Discount(type: DiscountType.percent, value: 10),
+        memberDiscountPercent: 5,
+        taxPercent: 11,
+        serviceChargePercent: 5,
+      );
+      // subtotal 100000, diskon 10% = 10000 → base 90000
+      // diskon member 5% = 4500 → base 85500
+      // service 5% = 4275, pajak 11% = 9405 → total 99180
+      expect(t.discountAmount, 10000);
+      expect(t.memberDiscountAmount, 4500);
+      expect(t.taxableBase, 85500);
+      expect(t.serviceChargeAmount, 4275);
+      expect(t.taxAmount, 9405);
+      expect(t.total, 99180);
+    });
+
+    test('diskon member tidak melebihi base & 0 tanpa member', () {
+      final t = calculateTransactionTotals(
+        subtotal: 10000,
+        memberDiscountPercent: 0,
+        taxPercent: 0,
+        serviceChargePercent: 0,
+      );
+      expect(t.memberDiscountAmount, 0);
+      expect(t.total, 10000);
+
+      final big = calculateTransactionTotals(
+        subtotal: 10000,
+        memberDiscountPercent: 200,
+        taxPercent: 0,
+        serviceChargePercent: 0,
+      );
+      expect(big.memberDiscountAmount, 10000);
+      expect(big.total, 0);
+    });
   });
 }

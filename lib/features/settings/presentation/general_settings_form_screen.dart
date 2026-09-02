@@ -32,6 +32,8 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
       TextEditingController(text: widget.settings.pajakPersen.toStringAsFixed(0));
   late final TextEditingController _scCtrl =
       TextEditingController(text: widget.settings.serviceChargePersen.toStringAsFixed(0));
+  late final TextEditingController _memberCtrl =
+      TextEditingController(text: widget.settings.diskonMemberPersen.toStringAsFixed(0));
   late RoundingMode _pembulatan = widget.settings.pembulatan;
   bool _saving = false;
   String? _error;
@@ -44,6 +46,7 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
     _ambangCtrl.dispose();
     _pajakCtrl.dispose();
     _scCtrl.dispose();
+    _memberCtrl.dispose();
     super.dispose();
   }
 
@@ -61,6 +64,8 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
         ambangPeringatanMenit: int.tryParse(_ambangCtrl.text) ?? widget.settings.ambangPeringatanMenit,
         pajakPersen: double.tryParse(_pajakCtrl.text) ?? widget.settings.pajakPersen,
         serviceChargePersen: double.tryParse(_scCtrl.text) ?? widget.settings.serviceChargePersen,
+        diskonMemberPersen:
+            double.tryParse(_memberCtrl.text) ?? widget.settings.diskonMemberPersen,
       );
       await ref.read(settingsRepositoryProvider).updateSettings(updated);
       if (mounted) context.pop();
@@ -154,6 +159,16 @@ class _GeneralSettingsFormScreenState extends ConsumerState<GeneralSettingsFormS
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _memberCtrl,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Diskon member (%)',
+              hintText: 'Otomatis berlaku saat nama member diisi di checkout',
+              prefixIcon: Icon(Icons.badge_outlined),
+            ),
           ),
           if (_error != null)
             Padding(

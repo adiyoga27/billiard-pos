@@ -145,8 +145,14 @@ class _CartPanel extends ConsumerWidget {
               children: [
                 const Icon(Icons.shopping_cart_outlined, size: 22, color: AppTheme.billiardGreenDark),
                 const SizedBox(width: 8),
-                const Text('Keranjang', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                const Spacer(),
+                const Expanded(
+                  child: Text(
+                    'Keranjang',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                  ),
+                ),
                 if (!cart.isEmpty)
                   TextButton(
                     onPressed: controller.clear,

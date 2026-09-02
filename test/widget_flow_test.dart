@@ -213,6 +213,7 @@ void main() {
       expect(find.text('Rp 50.000'), findsWidgets);
 
       // Aktifkan diskon 10%
+      await tester.ensureVisible(find.text('Pakai diskon'));
       await tester.tap(find.text('Pakai diskon'));
       await tester.pumpAndSettle();
       await tester.enterText(find.widgetWithText(TextField, 'Diskon (%)'), '10');
@@ -257,6 +258,33 @@ void main() {
       expect(find.textContaining('Uang tunai kurang dari total'), findsOneWidget);
       final snap = await db.collection('transactions').limit(1).get();
       expect(snap.docs, isEmpty);
+    });
+
+    testWidgets('input member → diskon member otomatis → tersimpan di transaksi',
+        (tester) async {
+      await pumpCheckout(tester, items: [CartItem(nasiGoreng, 2)]);
+
+      // Tanpa member: tidak ada baris diskon member
+      expect(find.textContaining('Diskon member'), findsNothing);
+
+      await tester.enterText(find.widgetWithText(TextField, 'Nama member (opsional)'), 'Agus');
+      await tester.pumpAndSettle();
+
+      // Toggle diskon member muncul (default ON, 5% dari settings)
+      expect(find.text('Pakai diskon member (5%)'), findsOneWidget);
+      // total 50.000 - 5% = 47.500
+      expect(find.text('Rp 47.500'), findsWidgets);
+
+      await tester.ensureVisible(find.text('Bayar & Cetak Struk'));
+      await tester.tap(find.text('Bayar & Cetak Struk'));
+      await tester.pumpAndSettle();
+      expect(find.text('Transaksi Berhasil'), findsOneWidget);
+
+      final snap = await db.collection('transactions').limit(1).get();
+      final tx = Transaction.fromFirestore(snap.docs.first.id, snap.docs.first.data());
+      expect(tx.namaMember, 'Agus');
+      expect(tx.diskonMember, 2500);
+      expect(tx.total, 47500);
     });
 
     testWidgets('checkout gabungan sesi meja (setelah 2x tambah paket) berhasil',

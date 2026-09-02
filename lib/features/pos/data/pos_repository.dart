@@ -96,6 +96,8 @@ class PosRepository {
     required AppUser kasir,
     required List<TransactionItem> items,
     Discount? discount,
+    String? namaMember,
+    double memberDiscountPercent = 0,
     required AppSettings settings,
     required PaymentMethod metodeBayar,
     int? uangDiterima,
@@ -105,6 +107,7 @@ class PosRepository {
     final totals = calculateTransactionTotals(
       subtotal: subtotal,
       discount: discount,
+      memberDiscountPercent: memberDiscountPercent,
       taxPercent: settings.pajakPersen,
       serviceChargePercent: settings.serviceChargePersen,
     );
@@ -196,8 +199,10 @@ class PosRepository {
         kasirNama: kasir.nama,
         tableSessionId: sessionToFinalize?.id,
         tableName: sessionToFinalize?.tableName,
+        namaMember: namaMember,
         subtotal: totals.subtotal,
         diskon: totals.discountAmount,
+        diskonMember: totals.memberDiscountAmount,
         pajak: totals.taxAmount,
         serviceCharge: totals.serviceChargeAmount,
         total: totals.total + sessionBillAmount,

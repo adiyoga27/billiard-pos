@@ -26,6 +26,9 @@ class ReceiptBuilder {
     b.writeln(line('No', transaction.nomor));
     b.writeln(line('Tanggal', formatDateTime(transaction.createdAt)));
     b.writeln(line('Kasir', transaction.kasirNama ?? '-'));
+    if (transaction.namaMember != null) {
+      b.writeln(line('Member', transaction.namaMember!));
+    }
     if (transaction.tableName != null) {
       b.writeln(line('Meja', transaction.tableName!));
     }
@@ -43,6 +46,9 @@ class ReceiptBuilder {
     b.writeln('=' * w);
     b.writeln(line('Subtotal', formatRupiah(transaction.subtotal)));
     if (transaction.diskon > 0) b.writeln(line('Diskon', '-${formatRupiah(transaction.diskon)}'));
+    if (transaction.diskonMember > 0) {
+      b.writeln(line('Diskon member', '-${formatRupiah(transaction.diskonMember)}'));
+    }
     if (transaction.serviceCharge > 0) b.writeln(line('Service', formatRupiah(transaction.serviceCharge)));
     if (transaction.pajak > 0) b.writeln(line('Pajak', formatRupiah(transaction.pajak)));
     b.writeln('-' * w);
@@ -87,6 +93,9 @@ class ReceiptBuilder {
     bytes += generator.text('No: ${transaction.nomor}');
     bytes += generator.text('Tanggal: ${formatDateTime(transaction.createdAt)}');
     bytes += generator.text('Kasir: ${transaction.kasirNama ?? '-'}');
+    if (transaction.namaMember != null) {
+      bytes += generator.text('Member: ${transaction.namaMember}');
+    }
     if (transaction.tableName != null) {
       bytes += generator.text('Meja: ${transaction.tableName}');
     }
@@ -114,6 +123,12 @@ class ReceiptBuilder {
       bytes += generator.row([
         PosColumn(text: 'Diskon', width: 8),
         PosColumn(text: '-${formatRupiah(transaction.diskon)}', width: 4, styles: const PosStyles(align: PosAlign.right)),
+      ]);
+    }
+    if (transaction.diskonMember > 0) {
+      bytes += generator.row([
+        PosColumn(text: 'Diskon member', width: 8),
+        PosColumn(text: '-${formatRupiah(transaction.diskonMember)}', width: 4, styles: const PosStyles(align: PosAlign.right)),
       ]);
     }
     if (transaction.serviceCharge > 0) {

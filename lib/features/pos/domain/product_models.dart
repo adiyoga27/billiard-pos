@@ -115,8 +115,10 @@ class Transaction {
   final String? kasirNama;
   final String? tableSessionId;
   final String? tableName;
+  final String? namaMember; // nama member (opsional) saat checkout
   final int subtotal;
   final int diskon;
+  final int diskonMember; // diskon otomatis member
   final int pajak;
   final int serviceCharge;
   final int total;
@@ -134,8 +136,10 @@ class Transaction {
     this.kasirNama,
     this.tableSessionId,
     this.tableName,
+    this.namaMember,
     required this.subtotal,
     required this.diskon,
+    this.diskonMember = 0,
     required this.pajak,
     required this.serviceCharge,
     required this.total,
@@ -156,8 +160,10 @@ class Transaction {
         kasirNama: map['kasir_nama'] as String?,
         tableSessionId: map['table_session_id'] as String?,
         tableName: map['table_name'] as String?,
+        namaMember: map['nama_member'] as String?,
         subtotal: (map['subtotal'] as num?)?.toInt() ?? 0,
         diskon: (map['diskon'] as num?)?.toInt() ?? 0,
+        diskonMember: (map['diskon_member'] as num?)?.toInt() ?? 0,
         pajak: (map['pajak'] as num?)?.toInt() ?? 0,
         serviceCharge: (map['service_charge'] as num?)?.toInt() ?? 0,
         total: (map['total'] as num?)?.toInt() ?? 0,
@@ -178,8 +184,10 @@ class Transaction {
         if (kasirNama != null) 'kasir_nama': kasirNama,
         if (tableSessionId != null) 'table_session_id': tableSessionId,
         if (tableName != null) 'table_name': tableName,
+        if (namaMember != null && namaMember!.isNotEmpty) 'nama_member': namaMember,
         'subtotal': subtotal,
         'diskon': diskon,
+        'diskon_member': diskonMember,
         'pajak': pajak,
         'service_charge': serviceCharge,
         'total': total,
