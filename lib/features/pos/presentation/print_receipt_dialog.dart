@@ -31,36 +31,108 @@ class PrintReceiptDialog extends ConsumerStatefulWidget {
   ConsumerState<PrintReceiptDialog> createState() => _PrintReceiptDialogState();
 }
 
-class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog> {
+class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog>
+    with WidgetsBindingObserver {
   static const _service = ThermalPrintService();
 
   bool _loading = true;
+  bool _requestingPerm = false;
+  bool _permDenied = false;
+  bool _permPermanent = false;
   String? _error;
   String? _printingMac;
+  ThermalPrinterDevice? _autoPrinting;
+  ThermalPrinterDevice? _savedPrinter;
   List<ThermalPrinterDevice> _devices = const [];
 
   @override
   void initState() {
     super.initState();
-    _loadDevices();
+    WidgetsBinding.instance.addObserver(this);
+    _init();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Ketika user kembali dari halaman pengaturan Android, cek ulang izin
+  /// supaya daftar printer langsung dimuat tanpa tutup-buka dialog.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && (_permDenied || _permPermanent)) {
+      _init();
+    }
+  }
+
+  /// Minta izin Bluetooth (Android 12+), lalu muat daftar printer.
+  Future<void> _init() async {
+    setState(() {
+      _loading = true;
+      _requestingPerm = false;
+      _permDenied = false;
+      _permPermanent = false;
+      _error = null;
+      _autoPrinting = null;
+    });
+    if (_service.isSupported) {
+      setState(() => _requestingPerm = true);
+      final result = await _service.ensureBluetoothPermission();
+      if (!mounted) return;
+      if (result != BluetoothPermissionResult.granted) {
+        setState(() {
+          _loading = false;
+          _requestingPerm = false;
+          _permDenied = true;
+          _permPermanent =
+              result == BluetoothPermissionResult.permanentlyDenied;
+        });
+        return;
+      }
+    }
+    await _loadDevices();
+  }
+
+  Future<void> _openSettings() async {
+    final ok = await _service.openPermissionSettings();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Tidak bisa membuka pengaturan. Buka manual: Setelan aplikasi → Izin → Perangkat di sekitar.'),
+        ),
+      );
+    }
   }
 
   Future<void> _loadDevices() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
     final devices = _service.isSupported ? await _service.pairedDevices() : const <ThermalPrinterDevice>[];
     if (!mounted) return;
+
+    final saved = await _service.savedPrinter();
+    if (!mounted) return;
+
     setState(() {
       _devices = devices;
+      _savedPrinter = saved;
       _loading = false;
+      _requestingPerm = false;
     });
+
+    // Printer terakhir masih terpasang → langsung cetak, tidak perlu pilih lagi.
+    final savedStillPaired = saved != null &&
+        devices.any((d) => d.mac.toLowerCase() == saved.mac.toLowerCase());
+    if (savedStillPaired) {
+      await _print(saved, auto: true);
+    }
   }
 
-  Future<void> _print(ThermalPrinterDevice device) async {
+  Future<void> _print(ThermalPrinterDevice device, {bool auto = false}) async {
     setState(() {
       _printingMac = device.mac;
+      _autoPrinting = auto ? device : null;
       _error = null;
     });
     final messenger = ScaffoldMessenger.of(context);
@@ -73,18 +145,23 @@ class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog> {
       final ok = await _service.printTo(mac: device.mac, bytes: bytes);
       if (!mounted) return;
       if (ok) {
+        await _service.savePrinter(device);
         messenger.showSnackBar(SnackBar(content: Text('Struk terkirim ke ${device.name}')));
         navigator.pop();
         return;
       }
       setState(() {
         _printingMac = null;
-        _error = 'Gagal mencetak ke ${device.name}. Periksa koneksi printer.';
+        _autoPrinting = null;
+        _error = auto
+            ? 'Gagal mencetak ke ${device.name}. Pilih printer lain di bawah.'
+            : 'Gagal mencetak ke ${device.name}. Periksa koneksi printer.';
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _printingMac = null;
+        _autoPrinting = null;
         _error = 'Gagal mencetak: $e';
       });
     }
@@ -209,19 +286,77 @@ class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog> {
                 ],
               ),
               const SizedBox(height: 10),
-              if (_loading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
+              if (_permDenied)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.tableReserved.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.tableReserved.withValues(alpha: 0.35)),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.bluetooth_disabled_rounded,
+                          size: 32, color: AppTheme.tableReserved),
+                      const SizedBox(height: 8),
+                      Text(
+                        _permPermanent ? 'Izin Bluetooth ditolak permanen' : 'Izin Bluetooth belum diberikan',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _permPermanent
+                            ? 'Aktifkan izin "Perangkat di sekitar" di pengaturan aplikasi, lalu kembali ke sini.'
+                            : 'Android butuh izin "Perangkat di sekitar" untuk mencetak struk.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: _permPermanent
+                            ? [
+                                FilledButton.tonalIcon(
+                                  onPressed: _openSettings,
+                                  icon: const Icon(Icons.settings_rounded, size: 18),
+                                  label: const Text('Buka Pengaturan'),
+                                ),
+                                OutlinedButton(
+                                  onPressed: _init,
+                                  child: const Text('Coba Lagi'),
+                                ),
+                              ]
+                            : [
+                                FilledButton.tonalIcon(
+                                  onPressed: _init,
+                                  icon: const Icon(Icons.verified_user_outlined, size: 18),
+                                  label: const Text('Aktifkan Izin'),
+                                ),
+                                OutlinedButton(
+                                  onPressed: _openSettings,
+                                  child: const Text('Buka Pengaturan'),
+                                ),
+                              ],
+                      ),
+                    ],
+                  ),
+                )
+              else if (_loading)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(
+                      const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2.5),
                       ),
-                      SizedBox(width: 10),
-                      Text('Mencari printer...'),
+                      const SizedBox(width: 10),
+                      Text(_requestingPerm ? 'Meminta izin Bluetooth...' : 'Mencari printer...'),
                     ],
                   ),
                 )
@@ -260,7 +395,9 @@ class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Nyalakan Bluetooth & pasangkan printer thermal di pengaturan perangkat, lalu pindai ulang.',
+                        _savedPrinter != null
+                            ? 'Printer "${_savedPrinter!.name}" tidak terdeteksi. Nyalakan printer atau pasangkan ulang, lalu pindai.'
+                            : 'Nyalakan Bluetooth & pasangkan printer thermal di pengaturan perangkat, lalu pindai ulang.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
@@ -276,6 +413,41 @@ class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog> {
               else
                 Column(
                   children: [
+                    if (_autoPrinting != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppTheme.billiardGreen.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.billiardGreen.withValues(alpha: 0.30)),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2.5),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Mencetak ke ${_autoPrinting!.name}...',
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() {
+                                _printingMac = null;
+                                _autoPrinting = null;
+                              }),
+                              child: const Text('Pilih lain'),
+                            ),
+                          ],
+                        ),
+                      ),
                     for (final d in _devices)
                       Container(
                         margin: const EdgeInsets.only(bottom: 8),
@@ -296,11 +468,36 @@ class _PrintReceiptDialogState extends ConsumerState<PrintReceiptDialog> {
                             child: const Icon(Icons.print_rounded,
                                 size: 20, color: AppTheme.billiardGreenDark),
                           ),
-                          title: Text(
-                            d.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                          title: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  d.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                                ),
+                              ),
+                              if (_savedPrinter != null &&
+                                  d.mac.toLowerCase() == _savedPrinter!.mac.toLowerCase())
+                                Container(
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.billiardGreen.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Text(
+                                    'Terakhir dipakai',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppTheme.billiardGreenDark,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           subtitle: Text(d.mac, style: const TextStyle(fontSize: 11)),
                           trailing: _printingMac == d.mac

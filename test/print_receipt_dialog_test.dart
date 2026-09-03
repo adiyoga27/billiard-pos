@@ -64,9 +64,11 @@ void main() {
     // Info kertas dari settings (default 58 mm)
     expect(find.text('Kertas 58 mm'), findsOneWidget);
 
-    // Di environment test tidak ada Bluetooth → empty state muncul
-    expect(find.text('Tidak ada printer terpasang'), findsOneWidget);
-    expect(find.text('Pindai Ulang'), findsOneWidget);
+    // Environment test = platform Android tanpa handler izin → permintaan izin
+    // gagal → UI meminta user mengaktifkan izin Bluetooth
+    expect(find.text('Izin Bluetooth belum diberikan'), findsOneWidget);
+    expect(find.text('Aktifkan Izin'), findsOneWidget);
+    expect(find.text('Buka Pengaturan'), findsOneWidget);
 
     // Preview struk masih bisa dibuka
     await tester.tap(find.text('Lihat Struk (preview)'));

@@ -127,69 +127,117 @@ class ReceiptBuilder {
     }
     bytes += generator.hr();
     for (final item in transaction.items) {
+      // Nama item di baris sendiri (bold), lalu baris qty x harga — total
+      // rata kanan. Kolom 7+5 = 12 unit: cukup lebar supaya harga tidak
+      // terpotong/terlipat (sebelumnya kolom harga cuma 2 unit → tulisan
+      // jadi tidak lurus).
+      bytes += generator.text(item.nama, styles: const PosStyles(bold: true));
       bytes += generator.row([
-        PosColumn(text: item.nama, width: 8),
-        PosColumn(text: '${item.qty}x', width: 2, styles: const PosStyles(align: PosAlign.right)),
-        PosColumn(text: formatRupiah(item.subtotal), width: 2, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(
+          text: '${item.qty} x ${formatRupiah(item.hargaSatuan)}',
+          width: 7,
+        ),
+        PosColumn(
+          text: formatRupiah(item.subtotal),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     if (transaction.sessionFinalized && sessionFee != null && sessionFee > 0) {
-      bytes += generator.text('Sesi Billiard (${transaction.tableName ?? ''})');
+      bytes += generator.text('Sesi Billiard (${transaction.tableName ?? ''})',
+          styles: const PosStyles(bold: true));
       bytes += generator.row([
-        PosColumn(text: 'Sewa meja', width: 8),
-        PosColumn(text: formatRupiah(sessionFee), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Sewa meja', width: 7),
+        PosColumn(
+          text: formatRupiah(sessionFee),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     bytes += generator.hr();
     bytes += generator.row([
-      PosColumn(text: 'Subtotal', width: 8),
-      PosColumn(text: formatRupiah(transaction.subtotal), width: 4, styles: const PosStyles(align: PosAlign.right)),
+      PosColumn(text: 'Subtotal', width: 7),
+      PosColumn(
+        text: formatRupiah(transaction.subtotal),
+        width: 5,
+        styles: const PosStyles(align: PosAlign.right),
+      ),
     ]);
     if (transaction.diskon > 0) {
       bytes += generator.row([
-        PosColumn(text: 'Diskon', width: 8),
-        PosColumn(text: '-${formatRupiah(transaction.diskon)}', width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Diskon', width: 7),
+        PosColumn(
+          text: '-${formatRupiah(transaction.diskon)}',
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     if (transaction.diskonMember > 0) {
       bytes += generator.row([
-        PosColumn(text: 'Diskon member', width: 8),
-        PosColumn(text: '-${formatRupiah(transaction.diskonMember)}', width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Diskon member', width: 7),
+        PosColumn(
+          text: '-${formatRupiah(transaction.diskonMember)}',
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     if (transaction.serviceCharge > 0) {
       bytes += generator.row([
-        PosColumn(text: 'Service', width: 8),
-        PosColumn(text: formatRupiah(transaction.serviceCharge), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Service', width: 7),
+        PosColumn(
+          text: formatRupiah(transaction.serviceCharge),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     if (transaction.pajak > 0) {
       bytes += generator.row([
-        PosColumn(text: 'Pajak', width: 8),
-        PosColumn(text: formatRupiah(transaction.pajak), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Pajak', width: 7),
+        PosColumn(
+          text: formatRupiah(transaction.pajak),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     bytes += generator.row([
-      PosColumn(text: 'TOTAL', width: 8, styles: const PosStyles(bold: true)),
+      PosColumn(text: 'TOTAL', width: 7, styles: const PosStyles(bold: true)),
       PosColumn(
         text: formatRupiah(transaction.total),
-        width: 4,
+        width: 5,
         styles: const PosStyles(align: PosAlign.right, bold: true),
       ),
     ]);
     if (transaction.uangDiterima != null) {
       bytes += generator.row([
-        PosColumn(text: 'Tunai', width: 8),
-        PosColumn(text: formatRupiah(transaction.uangDiterima!), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Tunai', width: 7),
+        PosColumn(
+          text: formatRupiah(transaction.uangDiterima!),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
       bytes += generator.row([
-        PosColumn(text: 'Kembalian', width: 8),
-        PosColumn(text: formatRupiah(transaction.kembalian ?? 0), width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Kembalian', width: 7),
+        PosColumn(
+          text: formatRupiah(transaction.kembalian ?? 0),
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     } else {
       bytes += generator.row([
-        PosColumn(text: 'Bayar', width: 8),
-        PosColumn(text: transaction.metodeBayar.label, width: 4, styles: const PosStyles(align: PosAlign.right)),
+        PosColumn(text: 'Bayar', width: 7),
+        PosColumn(
+          text: transaction.metodeBayar.label,
+          width: 5,
+          styles: const PosStyles(align: PosAlign.right),
+        ),
       ]);
     }
     bytes += generator.hr();

@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:yesbilliard/features/pos/domain/product_models.dart';
 import 'package:yesbilliard/features/pos/presentation/receipt_builder.dart';
+import 'package:yesbilliard/features/pos/services/thermal_print_service.dart';
 import 'package:yesbilliard/features/settings/domain/settings_models.dart';
 
 void main() {
@@ -80,6 +83,44 @@ void main() {
       expect(asText, contains('PROMO'));
       expect(asText, contains('MAKASIH'));
       expect(asText, contains('INV-101'));
+    });
+
+    test('bytes ESC/POS: harga rata kanan di ujung baris (tidak terlipat)',
+        () async {
+      const b = ReceiptBuilder();
+      final bytes = await b.buildEscBytes(
+        transaction: tx,
+        settings: const AppSettings(kertasMm: 58),
+      );
+      final lines = latin1
+          .decode(bytes, allowInvalid: true)
+          .split('\n')
+          .map((l) => l.trimRight())
+          .toList();
+      // Subtotal item 2x25.000 = 50.000 di ujung kanan barisnya
+      expect(lines.any((l) => l.endsWith('Rp 50.000') && !l.contains('Tunai') && !l.contains('Kembalian')), isTrue);
+      // Baris qty x harga masih utuh (tidak terpotong ke baris berikut)
+      expect(lines.any((l) => l.contains('2 x Rp 25.000')), isTrue);
+      // TOTAL memuat nilai total
+      expect(lines.any((l) => l.contains('TOTAL') && l.endsWith('Rp 50.000')), isTrue);
+    });
+  });
+
+  group('Filter perangkat printer', () {
+    test('nama headset/HP/hape tidak lolos sebagai printer', () {
+      expect(ThermalPrintService.isNonPrinterDevice('JBL T450 Headset'), isTrue);
+      expect(ThermalPrintService.isNonPrinterDevice('TWS Airdots'), isTrue);
+      expect(ThermalPrintService.isNonPrinterDevice('Samsung Galaxy A54'), isTrue);
+      expect(ThermalPrintService.isNonPrinterDevice('Xiaomi Redmi Note'), isTrue);
+      expect(ThermalPrintService.isNonPrinterDevice('MIX 2 Speaker'), isTrue);
+    });
+
+    test('nama printer thermal lolos', () {
+      expect(ThermalPrintService.isNonPrinterDevice('MPT-II Printer'), isFalse);
+      expect(ThermalPrintService.isNonPrinterDevice('HPRT N41'), isFalse);
+      expect(ThermalPrintService.isNonPrinterDevice('Epson TM-T82'), isFalse);
+      expect(ThermalPrintService.looksLikePrinter('MPT-II Printer'), isTrue);
+      expect(ThermalPrintService.looksLikePrinter('Epson TM-T82'), isTrue);
     });
   });
 }

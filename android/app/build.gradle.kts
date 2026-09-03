@@ -35,7 +35,17 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // R8 shrink & resource shrink dimatikan: sering OOM (Java heap)
+            // saat build release di mesin kasir. APK lebih besar tapi build stabil.
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
+    }
+
+    lint {
+        // Skip lint vital di build release (juga rawan OOM) — analyze Dart
+        // sudah cukup untuk menangkap masalah kode aplikasi.
+        checkReleaseBuilds = false
     }
 }
 
